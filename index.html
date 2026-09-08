@@ -1,0 +1,2757 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kadan Estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#F7F2EC;
+  --surface:#FFFFFF;
+  --surface-2:#EFE6D9;
+  --surface-3:#E6DACB;
+  --border:#E1D4C2;
+  --text:#2B241D;
+  --text-muted:#7A6E5F;
+  --accent:#B3502C;
+  --accent-ink:#8A3B1F;
+  --accent-soft:#F1DDCB;
+  --accent-contrast:#FFFFFF;
+  --ok:#3C8A5B;
+  --ok-soft:#E1F1E6;
+  --warn:#B4790F;
+  --warn-soft:#FBEDD2;
+  --critical:#C1382E;
+  --critical-soft:#F8DEDA;
+  --focus:#2E6CA8;
+  --shadow: 0 1px 2px rgba(43,36,29,.06), 0 6px 20px -8px rgba(43,36,29,.18);
+  --radius: 10px;
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1B1712;
+    --surface:#242019;
+    --surface-2:#2C2620;
+    --surface-3:#372F26;
+    --border:#413729;
+    --text:#F2EAE0;
+    --text-muted:#B3A692;
+    --accent:#E08A5C;
+    --accent-ink:#F0A87C;
+    --accent-soft:#3A2A1E;
+    --accent-contrast:#1B1712;
+    --ok:#5FBE85;
+    --ok-soft:#1E3227;
+    --warn:#E0AA4E;
+    --warn-soft:#3A2E14;
+    --critical:#E9776E;
+    --critical-soft:#3A211E;
+    --focus:#6FA8DC;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -10px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1B1712;
+  --surface:#242019;
+  --surface-2:#2C2620;
+  --surface-3:#372F26;
+  --border:#413729;
+  --text:#F2EAE0;
+  --text-muted:#B3A692;
+  --accent:#E08A5C;
+  --accent-ink:#F0A87C;
+  --accent-soft:#3A2A1E;
+  --accent-contrast:#1B1712;
+  --ok:#5FBE85;
+  --ok-soft:#1E3227;
+  --warn:#E0AA4E;
+  --warn-soft:#3A2E14;
+  --critical:#E9776E;
+  --critical-soft:#3A211E;
+  --focus:#6FA8DC;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -10px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display);text-wrap:balance;margin:0;}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+button{font-family:inherit;}
+a{color:var(--accent);}
+::selection{background:var(--accent-soft);}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+
+/* ============ LAYOUT ============ */
+.app{display:flex;min-height:100vh;}
+.sidebar{
+  width:220px;flex:0 0 220px;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:20px 14px;gap:4px;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:4px 8px 20px 8px;
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--accent);color:var(--accent-contrast);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:800;font-size:16px;
+  flex:0 0 34px;
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.15;}
+.brand-text b{font-family:var(--font-display);font-size:15px;font-weight:700;}
+.brand-text span{font-size:11px;color:var(--text-muted);}
+
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;cursor:pointer;
+  color:var(--text-muted);font-weight:600;font-size:13.5px;
+  border:1px solid transparent;
+  user-select:none;
+}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--accent-soft);color:var(--accent-ink);}
+.nav-item .ic{font-size:16px;width:20px;text-align:center;}
+.nav-sep{height:1px;background:var(--border);margin:10px 4px;}
+.sidebar-foot{margin-top:auto;padding:10px 8px;font-size:11px;color:var(--text-muted);}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:14px 24px;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-wrap:wrap;
+}
+.topbar-title{display:flex;flex-direction:column;gap:2px;}
+.topbar-title h1{font-size:19px;}
+.topbar-title p{margin:0;font-size:12.5px;color:var(--text-muted);}
+.responsavel-box{display:flex;align-items:center;gap:8px;}
+.responsavel-box label{font-size:12px;color:var(--text-muted);font-weight:600;}
+.responsavel-box input{width:170px;}
+
+.content{padding:22px 24px 60px 24px;flex:1;}
+.tab-panel{display:none;flex-direction:column;gap:18px;}
+.tab-panel.active{display:flex;}
+
+/* ============ COMPONENTS ============ */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px 20px;
+}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.card-head h2{font-size:15.5px;}
+.card-head p{margin:2px 0 0 0;font-size:12.5px;color:var(--text-muted);}
+
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.stat-tile{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);
+}
+.stat-tile .label{font-size:11.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.stat-tile .value{font-family:var(--font-mono);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;}
+.stat-tile.warn .value{color:var(--warn);}
+.stat-tile.critical .value{color:var(--critical);}
+.stat-tile.ok .value{color:var(--ok);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:7px;justify-content:center;
+  padding:9px 15px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-weight:600;font-size:13px;
+  cursor:pointer;white-space:nowrap;
+}
+.btn:hover{background:var(--surface-2);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast);}
+.btn-primary:hover{background:var(--accent-ink);border-color:var(--accent-ink);}
+.btn-danger{color:var(--critical);border-color:var(--critical);}
+.btn-danger:hover{background:var(--critical-soft);}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
+.btn[disabled]{opacity:.5;cursor:not-allowed;}
+
+input[type=text],input[type=number],input[type=date],select,textarea{
+  font-family:inherit;font-size:13.5px;color:var(--text);
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;
+  padding:8px 10px;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);}
+label.field-label{font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:5px;display:block;}
+.field{display:flex;flex-direction:column;}
+.field-row{display:grid;gap:12px;}
+.checkbox-row{display:flex;align-items:center;gap:7px;font-size:13px;}
+.checkbox-row input{width:auto;}
+
+.line-items{display:flex;flex-direction:column;gap:8px;}
+.line-item-row{display:flex;gap:8px;align-items:center;}
+.line-item-row .line-item-select{flex:1;min-width:0;}
+.line-item-row .line-item-qty{width:84px;flex:0 0 84px;}
+.line-item-row .line-item-unidade{width:52px;flex:0 0 52px;font-size:11.5px;color:var(--text-muted);text-align:center;}
+.line-item-row .line-item-remove{
+  flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:7px;
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-muted);font-size:13px;
+}
+.line-item-row .line-item-remove:hover{background:var(--critical-soft);color:var(--critical);border-color:var(--critical);}
+.line-items-foot{margin:9px 0 16px 0;}
+
+.tag{
+  display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;
+  font-size:11px;font-weight:700;letter-spacing:.02em;
+}
+.tag.ok{background:var(--ok-soft);color:var(--ok);}
+.tag.warn{background:var(--warn-soft);color:var(--warn);}
+.tag.critical{background:var(--critical-soft);color:var(--critical);}
+.tag.neutral{background:var(--surface-3);color:var(--text-muted);}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+table{border-collapse:collapse;width:100%;font-size:13px;}
+thead th{
+  text-align:left;background:var(--surface-2);color:var(--text-muted);
+  font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;
+  padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;
+}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface-2);}
+td.num,th.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+td.editable-num{width:90px;}
+td.editable-num input{text-align:right;}
+
+.pill-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:max-content;}
+.pill-toggle button{border:none;background:var(--surface);color:var(--text-muted);padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;}
+.pill-toggle button.active{background:var(--accent);color:var(--accent-contrast);}
+
+.chip-select{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{
+  padding:6px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);
+  font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text-muted);user-select:none;
+}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);}
+
+.empty-state{padding:34px 20px;text-align:center;color:var(--text-muted);font-size:13px;}
+.empty-state .ic{font-size:30px;display:block;margin-bottom:8px;}
+
+.pedido-resultados{
+  position:absolute;top:100%;left:0;right:0;z-index:20;margin-top:4px;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  box-shadow:var(--shadow);max-height:220px;overflow-y:auto;
+}
+.pedido-resultado-item{
+  padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12.5px;
+}
+.pedido-resultado-item:last-child{border-bottom:none;}
+.pedido-resultado-item:hover{background:var(--surface-2);}
+.pedido-resultado-item b{display:block;font-size:13px;}
+.pedido-resultado-item span{color:var(--text-muted);font-size:11.5px;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media (max-width:920px){.grid-2{grid-template-columns:1fr;}}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(20,15,10,.45);
+  display:flex;align-items:center;justify-content:center;z-index:60;padding:20px;
+}
+.modal{
+  background:var(--surface);border-radius:14px;box-shadow:var(--shadow);
+  max-width:560px;width:100%;max-height:88vh;overflow:auto;
+  border:1px solid var(--border);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:15.5px;}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.icon-btn{background:transparent;border:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px;}
+
+.toast-stack{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:80;}
+.toast{
+  background:var(--text);color:var(--bg);padding:11px 16px;border-radius:9px;
+  font-size:13px;font-weight:600;box-shadow:var(--shadow);max-width:320px;
+  animation:toast-in .18s ease-out;
+}
+.toast.error{background:var(--critical);color:#fff;}
+.toast.success{background:var(--ok);color:#fff;}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+.section-title{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:2px 0 -4px 2px;}
+
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;}
+.status-dot.ok{background:var(--ok);}
+.status-dot.warn{background:var(--warn);}
+.status-dot.critical{background:var(--critical);}
+
+.badge-count{background:var(--critical);color:#fff;font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 6px;margin-left:auto;}
+
+.loading-row{color:var(--text-muted);font-size:13px;padding:20px;text-align:center;}
+
+/* print */
+#print-area{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #print-area, #print-area *{visibility:visible;}
+  #print-area{display:block;position:absolute;top:0;left:0;width:100%;padding:0;margin:0;}
+  .no-print{display:none !important;}
+}
+.print-header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222;padding-bottom:10px;margin-bottom:14px;}
+.print-header h2{font-size:18px;margin:0;}
+.print-header .meta{font-size:11px;color:#444;text-align:right;}
+.print-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.print-table th{background:#eee;text-align:left;padding:5px 7px;border:1px solid #999;}
+.print-table td{padding:5px 7px;border:1px solid #bbb;}
+.print-group{font-weight:700;background:#f2f2f2;padding:4px 7px;margin-top:10px;border:1px solid #999;font-size:12px;}
+.print-blank-col{width:70px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:380px;width:100%;">
+    <div class="brand" style="padding:0 0 18px 0;">
+      <div class="brand-mark">K</div>
+      <div class="brand-text"><b>Kadan</b><span>Sushi Bar · Salvador</span></div>
+    </div>
+    <div id="login-bootstrap-notice" style="display:none;margin-bottom:14px;font-size:12.5px;color:var(--text-muted);">Nenhum usuário cadastrado ainda. Crie o primeiro usuário administrador para começar a usar o sistema.</div>
+    <div class="field" style="margin-bottom:12px;" id="login-nome-field">
+      <label class="field-label">Nome completo</label>
+      <input type="text" id="login-nome-input" placeholder="Seu nome completo">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label class="field-label">Usuário</label>
+      <input type="text" id="login-usuario-input" placeholder="ex: joao.silva" autocomplete="username">
+    </div>
+    <div class="field" style="margin-bottom:8px;">
+      <label class="field-label">Senha</label>
+      <input type="password" id="login-senha-input" autocomplete="current-password">
+    </div>
+    <div class="field" id="login-senha-confirma-field" style="display:none;margin-bottom:8px;">
+      <label class="field-label">Confirmar senha</label>
+      <input type="password" id="login-senha-confirma-input">
+    </div>
+    <p id="login-error" style="display:none;color:var(--critical);font-size:12.5px;margin:0 0 10px 0;"></p>
+    <button class="btn btn-primary" id="btn-login-submit" style="width:100%;">Entrar</button>
+    <p style="margin:12px 0 0 0;font-size:11px;color:var(--text-muted);">Todas as operações de estoque exigem usuário identificado e senha.</p>
+  </div>
+</div>
+
+<div id="app-shell" style="display:none;">
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div class="brand-text">
+        <b>Kadan</b>
+        <span>Sushi Bar · Salvador</span>
+      </div>
+    </div>
+    <div class="nav-item active" data-tab="estoque"><span class="ic">📥</span>Estoque</div>
+    <div class="nav-item" data-tab="itens"><span class="ic">📋</span>Itens / Catálogo</div>
+    <div class="nav-item" data-tab="compras"><span class="ic">🛒</span>Compras</div>
+    <div class="nav-item" data-tab="consumo"><span class="ic">📈</span>Consumo</div>
+    <div class="nav-item" data-tab="posicao"><span class="ic">📊</span>Posição de Estoque</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" data-tab="historico"><span class="ic">🕘</span>Histórico</div>
+    <div class="nav-item" data-tab="usuarios" id="nav-usuarios" style="display:none;"><span class="ic">🔐</span>Usuários</div>
+    <div class="sidebar-foot">Base: Guia de Compras Kadan SSA · dados salvos automaticamente</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <h1 id="topbar-heading">Estoque</h1>
+        <p id="topbar-sub">Lançamentos de entrada, requisição e ajuste de estoque</p>
+      </div>
+      <div class="responsavel-box">
+        <span style="font-size:12px;color:var(--text-muted);">Logado como</span>
+        <b id="current-user-name">—</b>
+        <button class="btn btn-sm" id="btn-alterar-senha">Alterar senha</button>
+        <button class="btn btn-sm" id="btn-logout">Sair</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===================== ESTOQUE ===================== -->
+      <section class="tab-panel active" id="tab-estoque">
+        <div class="stat-row" id="estoque-stats"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>📥 Lançar Entrada</h2>
+                <p>Recebimento de mercadoria de um fornecedor — pode lançar vários itens de uma vez</p>
+              </div>
+            </div>
+            <form id="form-entrada">
+              <div class="field-row" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+                <div class="field">
+                  <label class="field-label">Fornecedor</label>
+                  <input type="text" id="entrada-fornecedor">
+                </div>
+                <div class="field">
+                  <label class="field-label">Data</label>
+                  <input type="date" id="entrada-data" required>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom:10px;position:relative;">
+                <label class="field-label">Vincular a um pedido de compra salvo (opcional)</label>
+                <input type="text" id="entrada-buscar-pedido" placeholder="Buscar por fornecedor ou insumo…" autocomplete="off">
+                <div id="entrada-pedido-resultados" class="pedido-resultados" style="display:none;"></div>
+              </div>
+              <div id="entrada-pedido-vinculado" style="display:none;margin-bottom:14px;padding:9px 12px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);font-size:12.5px;color:var(--accent-ink);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <span id="entrada-pedido-vinculado-texto"></span>
+                <button type="button" class="btn btn-sm" id="entrada-desvincular-pedido">Desvincular</button>
+              </div>
+
+              <label class="field-label">Itens recebidos</label>
+              <div class="line-items" id="entrada-rows"></div>
+              <div class="line-items-foot">
+                <button type="button" class="btn btn-sm" id="entrada-add-row">+ Adicionar item</button>
+              </div>
+
+              <div class="field-row" style="grid-template-columns:1fr;margin-bottom:14px;">
+                <div class="field">
+                  <label class="field-label">Observação (nota fiscal, divergência, etc.)</label>
+                  <textarea id="entrada-obs" rows="2"></textarea>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">Registrar entrada</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>📤 Lançar Requisição</h2>
+                <p>Retirada de material para um setor — pode lançar vários itens de uma vez</p>
+              </div>
+            </div>
+            <form id="form-requisicao">
+              <div class="field-row" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+                <div class="field">
+                  <label class="field-label">Setor solicitante</label>
+                  <select id="req-setor">
+                    <option>Sushibar</option>
+                    <option>Cozinha</option>
+                    <option>Bar</option>
+                    <option>Produção</option>
+                    <option>Refeição</option>
+                    <option>Processo</option>
+                    <option>Limpeza</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label">Data</label>
+                  <input type="date" id="req-data" required>
+                </div>
+              </div>
+
+              <label class="field-label">Itens retirados</label>
+              <div class="line-items" id="req-rows"></div>
+              <div class="line-items-foot">
+                <button type="button" class="btn btn-sm" id="req-add-row">+ Adicionar item</button>
+              </div>
+
+              <div class="field-row" style="grid-template-columns:1fr;margin-bottom:14px;">
+                <div class="field">
+                  <label class="field-label">Observação</label>
+                  <textarea id="req-obs" rows="2"></textarea>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">Registrar requisição</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>🖨️ Relação de Contagem (Inventário)</h2>
+              <p>Gera uma lista para impressão, para o estoquista contar fisicamente os itens</p>
+            </div>
+            <button class="btn btn-primary" id="btn-abrir-contagem">Gerar relação de contagem</button>
+          </div>
+          <p style="margin:0;font-size:12.5px;color:var(--text-muted);">Você escolhe se a folha impressa mostra o estoque do sistema (para conferência) ou fica em branco (contagem cega, mais confiável).</p>
+        </div>
+
+        <div class="card" id="card-ajuste-estoque">
+          <div class="card-head">
+            <div>
+              <h2>🔄 Ajuste de Estoque por Contagem</h2>
+              <p>Depois de contar fisicamente, lance o resultado aqui para ajustar o sistema. Toda divergência exige um motivo.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-abrir-ajuste">Iniciar lançamento de contagem</button>
+          </div>
+          <div id="ajuste-area" style="display:none;">
+            <div class="section-title" style="margin-bottom:8px;">Setores a contar</div>
+            <div class="chip-select" id="ajuste-setores"></div>
+            <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-sm" id="btn-carregar-ajuste">Carregar itens</button>
+              <input type="text" id="ajuste-busca" placeholder="Buscar item…" style="width:200px;display:none;">
+            </div>
+            <div class="table-wrap" id="ajuste-table-wrap" style="display:none;">
+              <table>
+                <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Estoque Sistema</th><th class="num">Contagem Física</th><th class="num">Divergência</th><th>Motivo (obrigatório se houver divergência)</th></tr></thead>
+                <tbody id="ajuste-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:none;gap:10px;margin-top:14px;" id="ajuste-actions">
+              <button class="btn" id="btn-cancelar-ajuste">Cancelar</button>
+              <button class="btn btn-primary" id="btn-aplicar-ajuste">Aplicar ajustes de estoque</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="card-divergencias" style="display:none;">
+          <div class="card-head">
+            <div><h2>📄 Relatório de Divergências</h2><p id="divergencias-sub"></p></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn" id="divergencias-baixar-csv">⬇️ Baixar CSV</button>
+              <button class="btn btn-primary" id="divergencias-imprimir">🖨️ Imprimir</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Insumo</th><th>Setor</th><th class="num">Estoque Sistema</th><th class="num">Contagem Física</th><th class="num">Divergência</th><th>Motivo</th><th>Responsável</th></tr></thead>
+              <tbody id="divergencias-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>Últimas movimentações</h2></div>
+            <div class="pill-toggle" id="estoque-mov-filter">
+              <button data-f="todos" class="active">Todos</button>
+              <button data-f="entrada">Entradas</button>
+              <button data-f="requisicao">Requisições</button>
+              <button data-f="ajuste">Ajustes</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Tipo</th><th>Insumo</th><th class="num">Qtd</th><th>Fornecedor/Setor</th><th>Responsável</th><th>Obs.</th></tr></thead>
+              <tbody id="estoque-mov-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ITENS ===================== -->
+      <section class="tab-panel" id="tab-itens">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>📋 Catálogo de Insumos</h2>
+              <p>Cadastro dos itens, fornecedor, setor e estoque mínimo. Clique nos valores para editar.</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="itens-busca" placeholder="Buscar item…" style="width:200px;">
+              <button class="btn btn-primary" id="btn-novo-item">+ Novo item</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Insumo</th><th>Unidade</th><th>Setor(es)</th><th>Fornecedor(es)</th>
+                  <th>Dias de compra</th><th class="num">Estoque</th><th class="num">Mínimo</th><th>Status</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="itens-tbody"><tr><td colspan="9" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== COMPRAS ===================== -->
+      <section class="tab-panel" id="tab-compras">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>🛒 Relatório de Compras</h2>
+              <p>Selecione um ou mais fornecedores para gerar a lista de itens a comprar</p>
+            </div>
+          </div>
+          <div class="section-title" style="margin-bottom:8px;">Fornecedores</div>
+          <div class="chip-select" id="compras-fornecedores"></div>
+          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center;">
+            <button class="btn btn-sm" id="compras-sel-todos">Selecionar todos</button>
+            <button class="btn btn-sm" id="compras-sel-nenhum">Limpar seleção</button>
+            <label class="checkbox-row" style="margin-left:auto;">
+              <input type="checkbox" id="compras-so-abaixo-min"> Mostrar apenas itens abaixo do estoque mínimo
+            </label>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-primary" id="btn-gerar-relatorio-compras">Gerar relatório de compras</button>
+          </div>
+        </div>
+
+        <div class="card" id="compras-preview-card" style="display:none;">
+          <div class="card-head">
+            <div><h2>Pré-visualização</h2><p id="compras-preview-sub">Preencha a quantidade pedida de cada item para gerar o pedido de compra</p></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn" id="compras-baixar-csv">⬇️ Baixar CSV</button>
+              <button class="btn" id="compras-imprimir">🖨️ Imprimir lista</button>
+              <button class="btn" id="compras-imprimir-pedido">🖨️ Imprimir pedido (com quantidade)</button>
+              <button class="btn btn-primary" id="compras-salvar-pedido">💾 Salvar pedido</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fornecedor</th><th>Insumo</th><th>Unidade</th><th class="num">Estoque</th><th class="num">Mínimo</th><th class="num" style="min-width:110px;">Qtd. Pedida</th><th>Setor</th><th>Dias de compra</th><th>Dias de entrega</th><th>Observações</th></tr></thead>
+              <tbody id="compras-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" id="card-pedidos-salvos">
+          <div class="card-head">
+            <div>
+              <h2>📑 Pedidos de Compra Salvos</h2>
+              <p>Acompanhe os pedidos salvos e o status de recebimento — a entrada é confirmada em Estoque › Lançar Entrada</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn" id="btn-importar-pedido">⬆️ Importar pedido</button>
+              <input type="file" id="input-importar-pedido" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="pedidos-busca" placeholder="Buscar por fornecedor ou insumo…" style="width:240px;">
+            <div class="pill-toggle" id="pedidos-filtro-status">
+              <button data-f="todos" class="active">Todos</button>
+              <button data-f="aberto">Abertos</button>
+              <button data-f="parcial">Parciais</button>
+              <button data-f="concluido">Concluídos</button>
+            </div>
+          </div>
+          <p style="margin:-6px 0 14px 0;font-size:11.5px;color:var(--text-muted);">Use exportar/importar (planilha Excel) para levar um pedido de uma máquina para outra quando elas não compartilham o mesmo banco de dados.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Fornecedor</th><th>Itens</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th>Status</th><th></th></tr></thead>
+              <tbody id="pedidos-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== CONSUMO ===================== -->
+      <section class="tab-panel" id="tab-consumo">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>📈 Consumo de Insumos</h2>
+              <p>Entradas, saídas e consumo médio por item no período selecionado</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn" id="consumo-baixar-csv">⬇️ Baixar CSV</button>
+              <button class="btn btn-primary" id="consumo-imprimir">🖨️ Imprimir</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:end;">
+            <div class="field">
+              <label class="field-label">De</label>
+              <input type="date" id="consumo-data-inicio" style="width:150px;">
+            </div>
+            <div class="field">
+              <label class="field-label">Até</label>
+              <input type="date" id="consumo-data-fim" style="width:150px;">
+            </div>
+            <div class="pill-toggle" id="consumo-periodo-rapido">
+              <button type="button" data-dias="7">7 dias</button>
+              <button type="button" data-dias="30" class="active">30 dias</button>
+              <button type="button" data-dias="90">90 dias</button>
+            </div>
+            <input type="text" id="consumo-busca" placeholder="Buscar item…" style="width:180px;">
+            <select id="consumo-filtro-setor" style="width:170px;"><option value="">Todos os setores</option></select>
+            <select id="consumo-filtro-fornecedor" style="width:170px;"><option value="">Todos os fornecedores</option></select>
+          </div>
+
+          <div class="stat-row" id="consumo-stats" style="margin-bottom:14px;"></div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Insumo</th><th>Setor</th><th>Fornecedor</th>
+                <th class="num">Estoque Atual</th><th class="num">Entradas</th><th class="num">Saídas</th>
+                <th class="num">Saldo período</th><th class="num">Consumo méd./dia</th><th class="num">Dias de estoque</th>
+              </tr></thead>
+              <tbody id="consumo-tbody"><tr><td colspan="9" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== POSIÇÃO DE ESTOQUE ===================== -->
+      <section class="tab-panel" id="tab-posicao">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>📊 Posição Atual de Estoque</h2>
+              <p>Relatório para enviar ao setor de Compras</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn" id="posicao-baixar-csv">⬇️ Baixar CSV</button>
+              <button class="btn btn-primary" id="posicao-imprimir">🖨️ Imprimir</button>
+            </div>
+          </div>
+          <div class="stat-row" id="posicao-stats" style="margin-bottom:14px;"></div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="posicao-busca" placeholder="Buscar item…" style="width:200px;">
+            <select id="posicao-filtro-setor" style="width:170px;"><option value="">Todos os setores</option></select>
+            <select id="posicao-filtro-fornecedor" style="width:170px;"><option value="">Todos os fornecedores</option></select>
+            <select id="posicao-filtro-status" style="width:170px;">
+              <option value="">Todos os status</option>
+              <option value="critical">Crítico (zerado)</option>
+              <option value="warn">Baixo (abaixo do mínimo)</option>
+              <option value="ok">Normal</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Insumo</th><th>Setor</th><th>Fornecedor</th><th class="num">Estoque</th><th class="num">Mínimo</th><th>Status</th><th>Atualizado em</th></tr></thead>
+              <tbody id="posicao-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== HISTÓRICO ===================== -->
+      <section class="tab-panel" id="tab-historico">
+        <div class="card">
+          <div class="card-head">
+            <div><h2>🕘 Histórico completo de movimentações</h2><p>Últimos 12 meses</p></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <input type="text" id="hist-busca" placeholder="Buscar item, responsável…" style="width:240px;">
+            <div class="pill-toggle" id="hist-mov-filter">
+              <button data-f="todos" class="active">Todos</button>
+              <button data-f="entrada">Entradas</button>
+              <button data-f="requisicao">Requisições</button>
+              <button data-f="ajuste">Ajustes</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Tipo</th><th>Insumo</th><th class="num">Qtd</th><th>Fornecedor/Setor</th><th>Responsável</th><th>Obs.</th></tr></thead>
+              <tbody id="hist-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== USUÁRIOS ===================== -->
+      <section class="tab-panel" id="tab-usuarios">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>🔐 Usuários do Sistema</h2>
+              <p>Somente administradores podem cadastrar ou gerenciar usuários</p>
+            </div>
+            <button class="btn btn-primary" id="btn-novo-usuario">+ Novo usuário</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Último login</th><th></th></tr></thead>
+              <tbody id="usuarios-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===================== MODALS ===================== -->
+<div class="modal-backdrop no-print" id="modal-contagem" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3>Gerar relação de contagem</h3><button class="icon-btn" data-close-modal="modal-contagem">✕</button></div>
+    <div class="modal-body">
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">Setores a incluir</div>
+        <div class="chip-select" id="contagem-setores"></div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">Estoque do sistema na folha</div>
+        <div class="pill-toggle" id="contagem-modo">
+          <button data-m="cega" class="active">Contagem cega (sem estoque)</button>
+          <button data-m="com-estoque">Mostrar estoque atual</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-modal="modal-contagem">Cancelar</button>
+      <button class="btn btn-primary" id="btn-imprimir-contagem">🖨️ Gerar e imprimir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-item" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-item-title">Novo item</h3><button class="icon-btn" data-close-modal="modal-item">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="item-id-edit">
+      <div class="field"><label class="field-label">Nome do insumo</label><input type="text" id="item-nome" required></div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label class="field-label">Unidade</label><input type="text" id="item-unidade" placeholder="Kg, L, un, dz…"></div>
+        <div class="field"><label class="field-label">Estoque mínimo</label><input type="number" id="item-min" min="0" step="0.01" value="0"></div>
+      </div>
+      <div class="field"><label class="field-label">Setor(es) — separe por vírgula</label><input type="text" id="item-setores" placeholder="Sushibar, Cozinha"></div>
+      <div class="field"><label class="field-label">Fornecedor(es) — separe por vírgula</label><input type="text" id="item-fornecedores" placeholder="Exceller"></div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label class="field-label">Dias de compra — separe por vírgula</label><input type="text" id="item-dias-compra" placeholder="Segunda-Feira, Quinta-Feira"></div>
+        <div class="field"><label class="field-label">Dias de entrega — separe por vírgula</label><input type="text" id="item-dias-entrega" placeholder="Terça-Feira"></div>
+      </div>
+      <div class="field"><label class="field-label">Observações</label><textarea id="item-obs" rows="2"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger no-print" id="btn-desativar-item" style="display:none;margin-right:auto;">Desativar item</button>
+      <button class="btn" data-close-modal="modal-item">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-item">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-usuario" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-usuario-title">Novo usuário</h3><button class="icon-btn" data-close-modal="modal-usuario">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="usuario-id-edit">
+      <div class="field"><label class="field-label">Nome completo</label><input type="text" id="usuario-nome" required></div>
+      <div class="field"><label class="field-label">Usuário (login)</label><input type="text" id="usuario-login" placeholder="ex: joao.silva"></div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label class="field-label" id="usuario-senha-label">Senha</label><input type="password" id="usuario-senha" autocomplete="new-password"></div>
+        <div class="field"><label class="field-label">Confirmar senha</label><input type="password" id="usuario-senha-confirma" autocomplete="new-password"></div>
+      </div>
+      <p id="usuario-senha-hint" style="display:none;margin:0;font-size:11.5px;color:var(--text-muted);">Deixe em branco para manter a senha atual.</p>
+      <label class="checkbox-row"><input type="checkbox" id="usuario-admin"> Administrador (pode gerenciar usuários)</label>
+      <label class="checkbox-row" id="usuario-ativo-row" style="display:none;"><input type="checkbox" id="usuario-ativo"> Usuário ativo</label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-modal="modal-usuario">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-usuario">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-alterar-senha" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3>Alterar minha senha</h3><button class="icon-btn" data-close-modal="modal-alterar-senha">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">Senha atual</label><input type="password" id="senha-atual-input" autocomplete="current-password"></div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label class="field-label">Nova senha</label><input type="password" id="senha-nova-input" autocomplete="new-password"></div>
+        <div class="field"><label class="field-label">Confirmar nova senha</label><input type="password" id="senha-nova-confirma-input" autocomplete="new-password"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-modal="modal-alterar-senha">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-nova-senha">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-pedido-detalhe" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-pedido-title">Pedido de compra</h3><button class="icon-btn" data-close-modal="modal-pedido-detalhe">✕</button></div>
+    <div class="modal-body">
+      <p id="modal-pedido-sub" style="margin:0;font-size:12.5px;color:var(--text-muted);"></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th class="num">Pendente</th></tr></thead>
+          <tbody id="modal-pedido-itens"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger no-print" id="btn-cancelar-pedido" style="display:none;margin-right:auto;">Cancelar pedido</button>
+      <button class="btn" data-close-modal="modal-pedido-detalhe">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-confirm-generic" style="display:none;">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3>Confirmar</h3></div>
+    <div class="modal-body">
+      <p id="confirm-generic-msg" style="margin:0;font-size:13.5px;white-space:pre-line;"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="confirm-generic-no">Cancelar</button>
+      <button class="btn btn-primary" id="confirm-generic-yes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<div id="print-area"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* ========================================================================
+   VERSÃO INDEPENDENTE (fora do Claude) — usa Firebase (Firestore) como banco
+   de dados no lugar da capacidade "db" do Claude. Isto permite hospedar este
+   arquivo em qualquer site (GitHub Pages, Netlify, etc.) e acessar de vários
+   computadores ao mesmo tempo, compartilhando os mesmos dados, sem precisar
+   abrir nada dentro do Claude.
+
+   ANTES DE USAR: troque os valores abaixo pelos dados do SEU projeto Firebase
+   (veja o passo a passo que a Claude te enviou junto com este arquivo).
+   ======================================================================== */
+const firebaseConfig = {
+
+  apiKey: "AIzaSyDefsQ6B89vxdkDF-mTs_lRX3-ATvW8Dao",
+  authDomain: "kadan-estoque.firebaseapp.com",
+  projectId: "kadan-estoque",
+  storageBucket: "kadan-estoque.firebasestorage.app",
+  messagingSenderId: "79363461704",
+  appId: "1:79363461704:web:d44e3ff089fce5e1d2fe7d"
+};
+
+
+/* ========================================================================
+   KADAN ESTOQUE — app state & helpers
+   ======================================================================== */
+const WEEKDAYS = ["Segunda-Feira","Terça-Feira","Quarta-Feira","Quinta-Feira","Sexta-Feira","Sábado","Domingo"];
+
+const state = {
+  db: null,
+  downloads: null,
+  ready: false,
+  stock: {},          // id -> item doc
+  movementsByDate: {}, // 'YYYY-MM-DD' -> {date, entries:[]}
+  pedidos: {},        // id -> pedido de compra doc
+  unsubStock: null,
+  unsubMov: null,
+  unsubPedidos: null,
+  currentUser: null,        // {id, nome, admin} do usuário logado
+  dataListenersStarted: false,
+};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function isoFromDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayISO(){ return isoFromDate(new Date()); }
+function fmtDateBR(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function fmtNum(n){ n = Number(n||0); if(Number.isInteger(n)) return String(n); return n.toFixed(2).replace(/0+$/,'').replace(/\.$/,''); }
+function fmtDateTimeBR(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function slugify(s){ return (s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase(); }
+function splitList(s){ return (s||'').split(',').map(x=>x.trim()).filter(Boolean); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function toast(msg, type){
+  const stack = document.getElementById('toast-stack');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' '+type : '');
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 3800);
+}
+
+function itemStatus(item){
+  const q = Number(item.qty||0), min = Number(item.minQty||0);
+  if(q <= 0) return 'critical';
+  if(min > 0 && q <= min) return 'warn';
+  return 'ok';
+}
+function statusLabel(s){ return s==='critical' ? 'Crítico' : s==='warn' ? 'Baixo' : 'Normal'; }
+
+function sortedActiveItems(){
+  return Object.values(state.stock).filter(i=>i.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function allFornecedores(){
+  const set = new Set();
+  Object.values(state.stock).forEach(i=>(i.fornecedores||[]).forEach(f=>set.add(f)));
+  return [...set].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function allSetores(){
+  const set = new Set();
+  Object.values(state.stock).forEach(i=>(i.setores||[]).forEach(s=>set.add(s)));
+  return [...set].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+
+/* ========================================================================
+   CAPABILITY INIT (Firebase — substitui a capacidade "db" do Claude)
+   ======================================================================== */
+
+// A capacidade "db" do Claude expõe .collection()/.doc()/.onSnapshot()/.get()/
+// .set()/.acquire() — o SDK "compat" do Firestore usa exatamente a mesma forma
+// de chamar .collection()/.doc()/.onSnapshot()/.get()/.set(), então o resto do
+// app (mais de 2000 linhas) não precisou mudar. Só faltava .acquire() (uma
+// trava opcional e best-effort contra edições simultâneas), que não existe no
+// Firestore — por isso criamos aqui uma versão que não faz nada (sempre
+// "consegue a trava"), preservando o comportamento best-effort original.
+function installAcquireShim(){
+  if(firebase.firestore.DocumentReference.prototype.acquire) return;
+  firebase.firestore.DocumentReference.prototype.acquire = async function(){ return {acquired:true}; };
+}
+
+// Substitui a capacidade "downloads" do Claude por um download comum do navegador.
+async function browserDownload({filename, data}){
+  let blob;
+  if(data instanceof Blob) blob = data;
+  else if(data instanceof ArrayBuffer || ArrayBuffer.isView(data)) blob = new Blob([data]);
+  else blob = new Blob([data], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+  return {status:'saved'};
+}
+
+async function initCapabilities(){
+  try{
+    if(typeof firebase === 'undefined'){
+      showNoDbState();
+      showLoginError('Não foi possível carregar o Firebase. Verifique sua conexão com a internet e recarregue a página.');
+      return;
+    }
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('COLE_AQUI') === 0){
+      showNoDbState();
+      showLoginError('Configuração do Firebase pendente: edite o objeto firebaseConfig no início do arquivo com os dados do seu projeto Firebase.');
+      return;
+    }
+    firebase.initializeApp(firebaseConfig);
+    installAcquireShim();
+    // login anônimo no Firebase — necessário para que as regras de segurança do
+    // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
+    // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
+    // na coleção "users" do Firestore.
+    await firebase.auth().signInAnonymously();
+    const db = firebase.firestore();
+    state.db = db;
+    state.downloads = { save: browserDownload };
+    await initAuth(db);
+  }catch(e){
+    console.error(e);
+    showLoginError('Erro ao conectar ao Firebase: '+e.message);
+  }
+}
+
+function showNoDbState(){
+  ['itens-tbody','posicao-tbody','estoque-mov-tbody','hist-tbody'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = `<tr><td colspan="9" class="loading-row">Não foi possível conectar ao banco de dados. Veja a mensagem acima do formulário de login.</td></tr>`;
+  });
+}
+
+function initDataListeners(db){
+  // live stock
+  state.unsubStock = db.collection('stock').onSnapshot(snap=>{
+    const map = {};
+    snap.docs.forEach(d=>{ map[d.id] = Object.assign({id:d.id}, d.data()); });
+    state.stock = map;
+    state.ready = true;
+    renderAll();
+  }, err=>{ console.error('stock snapshot error', err); toast('Erro ao carregar estoque: '+err.code, 'error'); });
+
+  // recent movements (last ~370 days, one doc per day)
+  loadRecentMovements(db);
+
+  // live pedidos de compra
+  state.unsubPedidos = db.collection('pedidos').onSnapshot(snap=>{
+    const map = {};
+    snap.docs.forEach(d=>{ map[d.id] = Object.assign({id:d.id}, d.data()); });
+    state.pedidos = map;
+    renderPedidosTab();
+    renderEntradaPedidoResultados();
+  }, err=>{ console.error('pedidos snapshot error', err); });
+}
+
+function stopDataListeners(){
+  if(state.unsubStock){ try{ state.unsubStock(); }catch(e){} state.unsubStock = null; }
+  if(state.unsubPedidos){ try{ state.unsubPedidos(); }catch(e){} state.unsubPedidos = null; }
+  state.dataListenersStarted = false;
+}
+
+/* ========================================================================
+   AUTENTICAÇÃO — cadastro de usuários e login obrigatório
+   ======================================================================== */
+function randomHex(len){
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return [...arr].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPassword(password, saltHex){
+  const enc = new TextEncoder();
+  const digest = await crypto.subtle.digest('SHA-256', enc.encode(saltHex+':'+password));
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+let loginMode = 'login';
+
+async function initAuth(db){
+  try{
+    const snap = await db.collection('users').limit(1).get();
+    loginMode = snap.docs.length===0 ? 'bootstrap' : 'login';
+  }catch(e){ console.error(e); loginMode = 'login'; }
+  renderLoginMode();
+}
+
+function renderLoginMode(){
+  const isBootstrap = loginMode === 'bootstrap';
+  document.getElementById('login-bootstrap-notice').style.display = isBootstrap ? 'block' : 'none';
+  document.getElementById('login-nome-field').style.display = isBootstrap ? 'block' : 'none';
+  document.getElementById('login-senha-confirma-field').style.display = isBootstrap ? 'block' : 'none';
+  document.getElementById('btn-login-submit').textContent = isBootstrap ? 'Criar administrador e entrar' : 'Entrar';
+}
+
+function showLoginError(msg){
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearLoginError(){
+  document.getElementById('login-error').style.display = 'none';
+}
+
+async function createUser({nome, usuario, senha, admin}){
+  const db = state.db; if(!db) throw new Error('sem conexão com dados');
+  const id = slugify(usuario);
+  if(!id) throw new Error('Informe um login válido.');
+  const existing = await db.doc('users/'+id).get();
+  if(existing.exists) throw new Error('Já existe um usuário com esse login.');
+  const salt = randomHex(16);
+  const senhaHash = await hashPassword(senha, salt);
+  await db.doc('users/'+id).set({
+    nome, usuario: id, salt, senhaHash, admin: !!admin, ativo: true,
+    criadoEm: new Date().toISOString(), ultimoLogin: null,
+  });
+  return id;
+}
+
+async function attemptLogin(usuario, senha){
+  const db = state.db; if(!db) throw new Error('sem conexão com dados');
+  const id = slugify(usuario);
+  const snap = await db.doc('users/'+id).get();
+  if(!snap.exists || snap.data().ativo === false) return {ok:false, msg:'Usuário ou senha inválidos.'};
+  const u = snap.data();
+  const hash = await hashPassword(senha, u.salt);
+  if(hash !== u.senhaHash) return {ok:false, msg:'Usuário ou senha inválidos.'};
+  try{ await db.doc('users/'+id).set(Object.assign({}, u, {ultimoLogin: new Date().toISOString()})); }catch(e){}
+  return {ok:true, user:{id, nome:u.nome, admin: !!u.admin}};
+}
+
+function startApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+  document.getElementById('current-user-name').textContent = state.currentUser.nome;
+  document.getElementById('nav-usuarios').style.display = state.currentUser.admin ? 'flex' : 'none';
+  if(!state.dataListenersStarted){
+    state.dataListenersStarted = true;
+    initDataListeners(state.db);
+  } else {
+    renderAll();
+  }
+}
+
+document.getElementById('btn-login-submit').addEventListener('click', async ()=>{
+  clearLoginError();
+  if(!state.db){ showLoginError('Ainda conectando ao armazenamento de dados. Aguarde um instante e tente novamente.'); return; }
+  const usuario = document.getElementById('login-usuario-input').value.trim();
+  const senha = document.getElementById('login-senha-input').value;
+  if(!usuario || !senha){ showLoginError('Informe usuário e senha.'); return; }
+  const btn = document.getElementById('btn-login-submit'); btn.disabled = true;
+  try{
+    if(loginMode === 'bootstrap'){
+      const nome = document.getElementById('login-nome-input').value.trim();
+      const confirma = document.getElementById('login-senha-confirma-input').value;
+      if(!nome){ showLoginError('Informe seu nome completo.'); return; }
+      if(senha.length < 4){ showLoginError('A senha deve ter ao menos 4 caracteres.'); return; }
+      if(senha !== confirma){ showLoginError('As senhas não coincidem.'); return; }
+      const id = await createUser({nome, usuario, senha, admin:true});
+      state.currentUser = {id, nome, admin:true};
+      toast('Usuário administrador criado. Bem-vindo!', 'success');
+      startApp();
+    } else {
+      const result = await attemptLogin(usuario, senha);
+      if(!result.ok){ showLoginError(result.msg); return; }
+      state.currentUser = result.user;
+      startApp();
+    }
+    ['login-usuario-input','login-senha-input','login-senha-confirma-input','login-nome-input'].forEach(id=>{ document.getElementById(id).value=''; });
+  }catch(e){ console.error(e); showLoginError('Erro ao entrar: '+e.message); }
+  finally{ btn.disabled = false; }
+});
+['login-usuario-input','login-senha-input','login-senha-confirma-input','login-nome-input'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') document.getElementById('btn-login-submit').click(); });
+});
+
+document.getElementById('btn-logout').addEventListener('click', async ()=>{
+  if(!(await askConfirm('Deseja sair do sistema?'))) return;
+  state.currentUser = null;
+  stopDataListeners();
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const estoqueNav = document.querySelector('.nav-item[data-tab="estoque"]');
+  if(estoqueNav) estoqueNav.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-estoque').classList.add('active');
+  document.getElementById('topbar-heading').textContent = TAB_META.estoque.title;
+  document.getElementById('topbar-sub').textContent = TAB_META.estoque.sub;
+  initAuth(state.db);
+});
+
+document.getElementById('btn-alterar-senha').addEventListener('click', ()=>{
+  document.getElementById('senha-atual-input').value = '';
+  document.getElementById('senha-nova-input').value = '';
+  document.getElementById('senha-nova-confirma-input').value = '';
+  document.getElementById('modal-alterar-senha').style.display = 'flex';
+});
+document.getElementById('btn-salvar-nova-senha').addEventListener('click', async ()=>{
+  if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const atual = document.getElementById('senha-atual-input').value;
+  const nova = document.getElementById('senha-nova-input').value;
+  const confirma = document.getElementById('senha-nova-confirma-input').value;
+  if(!atual || !nova){ toast('Preencha todos os campos.', 'error'); return; }
+  if(nova.length < 4){ toast('A nova senha deve ter ao menos 4 caracteres.', 'error'); return; }
+  if(nova !== confirma){ toast('As senhas novas não coincidem.', 'error'); return; }
+  try{
+    const ref = state.db.doc('users/'+state.currentUser.id);
+    const snap = await ref.get();
+    if(!snap.exists) throw new Error('Usuário não encontrado.');
+    const u = snap.data();
+    const hashAtual = await hashPassword(atual, u.salt);
+    if(hashAtual !== u.senhaHash){ toast('Senha atual incorreta.', 'error'); return; }
+    const novoSalt = randomHex(16);
+    const novoHash = await hashPassword(nova, novoSalt);
+    await ref.set(Object.assign({}, u, {salt: novoSalt, senhaHash: novoHash}));
+    toast('Senha alterada com sucesso.', 'success');
+    closeModal('modal-alterar-senha');
+  }catch(e){ console.error(e); toast('Erro ao alterar senha: '+e.message, 'error'); }
+});
+
+/* ---- gestão de usuários (aba Usuários — apenas administradores) ---- */
+function renderUsuariosTab(){
+  if(!state.db || !state.currentUser || !state.currentUser.admin) return;
+  state.db.collection('users').get().then(snap=>{
+    const users = snap.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    const tbody = document.getElementById('usuarios-tbody');
+    if(users.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum usuário cadastrado.</td></tr>`; return; }
+    tbody.innerHTML = users.map(u=>`<tr data-id="${esc(u.id)}">
+      <td><b>${esc(u.nome)}</b></td>
+      <td>${esc(u.usuario||u.id)}</td>
+      <td><span class="tag ${u.admin?'warn':'neutral'}">${u.admin?'Administrador':'Operador'}</span></td>
+      <td><span class="tag ${u.ativo===false?'critical':'ok'}">${u.ativo===false?'Inativo':'Ativo'}</span></td>
+      <td>${u.criadoEm?fmtDateTimeBR(u.criadoEm):'—'}</td>
+      <td>${u.ultimoLogin?fmtDateTimeBR(u.ultimoLogin):'—'}</td>
+      <td><button class="btn btn-sm" data-edit-usuario="${esc(u.id)}">Editar</button></td>
+    </tr>`).join('');
+    tbody.querySelectorAll('[data-edit-usuario]').forEach(btn=>{
+      const uid2 = btn.getAttribute('data-edit-usuario');
+      btn.addEventListener('click', ()=> openUsuarioModal(uid2, users.find(u=>u.id===uid2)));
+    });
+  }).catch(e=>{ console.error(e); toast('Erro ao carregar usuários: '+e.message, 'error'); });
+}
+
+function openUsuarioModal(id, userData){
+  const isNew = !id;
+  document.getElementById('modal-usuario-title').textContent = isNew ? 'Novo usuário' : 'Editar usuário';
+  document.getElementById('usuario-id-edit').value = id || '';
+  document.getElementById('usuario-nome').value = userData ? userData.nome : '';
+  document.getElementById('usuario-login').value = userData ? (userData.usuario||userData.id) : '';
+  document.getElementById('usuario-login').disabled = !isNew;
+  document.getElementById('usuario-senha').value = '';
+  document.getElementById('usuario-senha-confirma').value = '';
+  document.getElementById('usuario-senha-label').textContent = isNew ? 'Senha' : 'Nova senha';
+  document.getElementById('usuario-senha-hint').style.display = isNew ? 'none' : 'block';
+  document.getElementById('usuario-admin').checked = userData ? !!userData.admin : false;
+  document.getElementById('usuario-ativo-row').style.display = isNew ? 'none' : 'flex';
+  document.getElementById('usuario-ativo').checked = userData ? userData.ativo !== false : true;
+  document.getElementById('modal-usuario').style.display = 'flex';
+}
+document.getElementById('btn-novo-usuario').addEventListener('click', ()=> openUsuarioModal(null, null));
+
+document.getElementById('btn-salvar-usuario').addEventListener('click', async ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const id = document.getElementById('usuario-id-edit').value;
+  const isNew = !id;
+  const nome = document.getElementById('usuario-nome').value.trim();
+  const login = document.getElementById('usuario-login').value.trim();
+  const senha = document.getElementById('usuario-senha').value;
+  const senhaConfirma = document.getElementById('usuario-senha-confirma').value;
+  const admin = document.getElementById('usuario-admin').checked;
+  if(!nome){ toast('Informe o nome do usuário.', 'error'); return; }
+  if(isNew && !login){ toast('Informe o login do usuário.', 'error'); return; }
+  if(senha && senha !== senhaConfirma){ toast('As senhas não coincidem.', 'error'); return; }
+  if(isNew && !senha){ toast('Informe uma senha para o novo usuário.', 'error'); return; }
+  if(senha && senha.length < 4){ toast('A senha deve ter ao menos 4 caracteres.', 'error'); return; }
+  try{
+    if(isNew){
+      await createUser({nome, usuario: login, senha, admin});
+      toast('Usuário criado.', 'success');
+    } else {
+      const ref = state.db.doc('users/'+id);
+      const snap = await ref.get();
+      const cur = snap.data();
+      const ativo = document.getElementById('usuario-ativo').checked;
+      if(id === state.currentUser.id && !ativo){ toast('Você não pode desativar seu próprio usuário.', 'error'); return; }
+      if(id === state.currentUser.id && !admin && !(await askConfirm('Você está removendo seu próprio acesso de administrador. Deseja continuar?'))) return;
+      const body = Object.assign({}, cur, {nome, admin, ativo});
+      if(senha){
+        const novoSalt = randomHex(16);
+        body.salt = novoSalt;
+        body.senhaHash = await hashPassword(senha, novoSalt);
+      }
+      await ref.set(body);
+      if(id === state.currentUser.id){
+        state.currentUser.nome = nome; state.currentUser.admin = admin;
+        document.getElementById('current-user-name').textContent = nome;
+        document.getElementById('nav-usuarios').style.display = admin ? 'flex' : 'none';
+      }
+      toast('Usuário atualizado.', 'success');
+    }
+    closeModal('modal-usuario');
+    renderUsuariosTab();
+  }catch(e){ console.error(e); toast('Erro ao salvar usuário: '+e.message, 'error'); }
+});
+
+async function loadRecentMovements(db){
+  try{
+    const snap = await db.collection('movements').orderBy('date','desc').limit(370).get();
+    const map = {};
+    snap.docs.forEach(d=>{ map[d.id] = d.data(); });
+    state.movementsByDate = map;
+    renderMovementTables();
+    renderConsumoTab();
+  }catch(e){
+    console.error(e);
+  }
+}
+
+function allMovementEntries(){
+  const out = [];
+  Object.values(state.movementsByDate).forEach(day=>{
+    (day.entries||[]).forEach(e=> out.push(Object.assign({date: day.date}, e)));
+  });
+  out.sort((a,b)=> (b.ts||'').localeCompare(a.ts||''));
+  return out;
+}
+
+/* ---- writes ---- */
+async function updateStockQty(itemId, delta){
+  const db = state.db; if(!db) throw new Error('sem conexão com dados');
+  const ref = db.doc('stock/'+itemId);
+  let lease = {acquired:true};
+  try{ lease = await ref.acquire({holder:'op-'+uid(), ttlMs:8000}); }catch(e){ /* best-effort */ }
+  const snap = await ref.get();
+  const cur = snap.exists ? snap.data() : null;
+  if(!cur) throw new Error('item não encontrado');
+  const newQty = Number((Number(cur.qty||0) + delta).toFixed(4));
+  await ref.set(Object.assign({}, cur, {qty:newQty, updatedAt: new Date().toISOString()}));
+  return newQty;
+}
+
+async function appendMovements(dateISO, entries){
+  const db = state.db; if(!db) throw new Error('sem conexão com dados');
+  const ref = db.doc('movements/'+dateISO);
+  try{ await ref.acquire({holder:'op-'+uid(), ttlMs:8000}); }catch(e){}
+  const snap = await ref.get();
+  const cur = snap.exists ? snap.data() : {date: dateISO, entries: []};
+  const merged = (cur.entries||[]).concat(entries);
+  await ref.set({date: dateISO, entries: merged});
+  state.movementsByDate[dateISO] = {date: dateISO, entries: merged};
+}
+
+/**
+ * Registra vários insumos de uma vez (entrada ou requisição), todos com os
+ * mesmos campos compartilhados (fornecedor/setor, data, observação).
+ * items: [{itemId, qtd}, ...]
+ */
+async function registrarMovimentosEmLote(tipo, items, shared){
+  const entries = [];
+  let okCount = 0, failCount = 0;
+  const responsavel = state.currentUser ? state.currentUser.nome : 'Não informado';
+  for(const {itemId, qtd} of items){
+    const item = state.stock[itemId];
+    if(!item){ failCount++; continue; }
+    const delta = tipo === 'entrada' ? Math.abs(qtd) : -Math.abs(qtd);
+    try{
+      await updateStockQty(itemId, delta);
+      entries.push({
+        id: uid(), ts: new Date().toISOString(), tipo,
+        itemId, itemName: item.nome, unidade: item.unidade || 'un',
+        qty: Math.abs(qtd), delta,
+        fornecedor: shared.fornecedor || '', setor: shared.setor || '',
+        responsavel, obs: shared.obs || '',
+      });
+      okCount++;
+    }catch(e){ console.error('Falha ao lançar item', itemId, e); failCount++; }
+  }
+  if(entries.length){
+    await appendMovements(shared.data || todayISO(), entries);
+  }
+  return {okCount, failCount};
+}
+
+async function saveItem(data, isNew){
+  const db = state.db; if(!db) throw new Error('sem conexão com dados');
+  let id = data.id;
+  if(isNew){
+    id = slugify(data.nome);
+    if(!id) id = uid();
+    if(state.stock[id]) id = id + '-' + uid().slice(-4);
+  }
+  const ref = db.doc('stock/'+id);
+  const existing = state.stock[id] || {};
+  const body = Object.assign({}, existing, data, {
+    id: undefined,
+    updatedAt: new Date().toISOString(),
+    createdAt: existing.createdAt || new Date().toISOString(),
+    ativo: existing.ativo === false ? false : true,
+  });
+  delete body.id;
+  await ref.set(body);
+  return id;
+}
+
+async function setItemAtivo(itemId, ativo){
+  const db = state.db; if(!db) return;
+  const ref = db.doc('stock/'+itemId);
+  const cur = state.stock[itemId] || (await ref.get()).data();
+  await ref.set(Object.assign({}, cur, {ativo, updatedAt:new Date().toISOString()}));
+}
+
+/* ========================================================================
+   RENDER
+   ======================================================================== */
+function renderAll(){
+  renderEstoqueStats();
+  renderItemSelects();
+  renderItensTab();
+  renderComprasFornecedores();
+  renderConsumoTab();
+  renderPosicaoTab();
+  renderMovementTables();
+}
+
+function renderEstoqueStats(){
+  const items = sortedActiveItems();
+  const critical = items.filter(i=>itemStatus(i)==='critical').length;
+  const warn = items.filter(i=>itemStatus(i)==='warn').length;
+  const ok = items.length - critical - warn;
+  document.getElementById('estoque-stats').innerHTML = `
+    <div class="stat-tile"><div class="label">Itens cadastrados</div><div class="value">${items.length}</div></div>
+    <div class="stat-tile ok"><div class="label">Estoque normal</div><div class="value">${ok}</div></div>
+    <div class="stat-tile warn"><div class="label">Estoque baixo</div><div class="value">${warn}</div></div>
+    <div class="stat-tile critical"><div class="label">Zerados</div><div class="value">${critical}</div></div>
+  `;
+}
+
+function itemOptionsHtml(){
+  return sortedActiveItems().map(i=>`<option value="${esc(i.id)}" data-unidade="${esc(i.unidade||'un')}" data-fornecedor="${esc((i.fornecedores||[])[0]||'')}">${esc(i.nome)} ${i.unidade?('('+esc(i.unidade)+')'):''}</option>`).join('');
+}
+
+function renderItemSelects(){
+  const opts = `<option value="">Selecione um insumo…</option>` + itemOptionsHtml();
+  ['entrada-rows','req-rows'].forEach(containerId=>{
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    container.querySelectorAll('.line-item-select').forEach(sel=>{
+      const prev = sel.value;
+      sel.innerHTML = opts;
+      if(prev && state.stock[prev]) sel.value = prev;
+      updateLineItemUnidade(sel);
+    });
+  });
+}
+
+function updateLineItemUnidade(sel){
+  const row = sel.closest('.line-item-row');
+  if(!row) return;
+  const unidadeEl = row.querySelector('.line-item-unidade');
+  const opt = sel.options[sel.selectedIndex];
+  unidadeEl.textContent = opt && opt.value ? (opt.getAttribute('data-unidade')||'—') : '—';
+}
+
+/* ---- multi-item line rows (Entrada / Requisição) ---- */
+const rowCounters = {entrada:0, req:0};
+
+function lineItemRowHtml(prefix, rowId){
+  return `<div class="line-item-row" data-row-id="${rowId}">
+    <select class="line-item-select">${'<option value="">Selecione um insumo…</option>' + itemOptionsHtml()}</select>
+    <input type="number" class="line-item-qty" min="0" step="0.01" placeholder="Qtd">
+    <span class="line-item-unidade">—</span>
+    <button type="button" class="line-item-remove" title="Remover item">✕</button>
+  </div>`;
+}
+
+function wireLineItemRow(rowEl){
+  const sel = rowEl.querySelector('.line-item-select');
+  const removeBtn = rowEl.querySelector('.line-item-remove');
+  sel.addEventListener('change', ()=> updateLineItemUnidade(sel));
+  removeBtn.addEventListener('click', ()=>{
+    const container = rowEl.parentElement;
+    if(container.children.length > 1){
+      rowEl.remove();
+    } else {
+      sel.value = '';
+      rowEl.querySelector('.line-item-qty').value = '';
+      updateLineItemUnidade(sel);
+    }
+  });
+}
+
+function addLineItemRow(prefix){
+  const container = document.getElementById(prefix+'-rows');
+  if(!container) return;
+  const rowId = prefix + '-row-' + (++rowCounters[prefix]);
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = lineItemRowHtml(prefix, rowId);
+  const rowEl = wrapper.firstElementChild;
+  container.appendChild(rowEl);
+  wireLineItemRow(rowEl);
+  return rowEl;
+}
+
+function resetLineItemForm(prefix){
+  const container = document.getElementById(prefix+'-rows');
+  container.innerHTML = '';
+  addLineItemRow(prefix);
+}
+
+function collectLineItems(prefix){
+  const container = document.getElementById(prefix+'-rows');
+  const rows = [...container.querySelectorAll('.line-item-row')];
+  const items = [];
+  const errors = [];
+  rows.forEach((rowEl, idx)=>{
+    const sel = rowEl.querySelector('.line-item-select');
+    const qtyInp = rowEl.querySelector('.line-item-qty');
+    const itemId = sel.value;
+    const qtdRaw = qtyInp.value;
+    if(!itemId && !qtdRaw) return; // skip a fully empty row
+    const qtd = Number(qtdRaw);
+    if(!itemId || !qtd || qtd<=0){ errors.push(`Item ${idx+1}: selecione um insumo e informe uma quantidade válida.`); return; }
+    items.push({itemId, qtd});
+  });
+  return {items, errors};
+}
+
+function renderItensTab(){
+  const tbody = document.getElementById('itens-tbody');
+  const busca = (document.getElementById('itens-busca').value||'').toLowerCase();
+  const items = sortedActiveItems().filter(i=> !busca || i.nome.toLowerCase().includes(busca));
+  if(items.length===0){ tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><span class="ic">📋</span>Nenhum item encontrado.</td></tr>`; return; }
+  tbody.innerHTML = items.map(i=>{
+    const s = itemStatus(i);
+    return `<tr data-id="${esc(i.id)}">
+      <td><b>${esc(i.nome)}</b></td>
+      <td>${esc(i.unidade||'un')}</td>
+      <td>${esc((i.setores||[]).join(', ')||'—')}</td>
+      <td>${esc((i.fornecedores||[]).join(', ')||'—')}</td>
+      <td>${esc((i.diasCompra||[]).join(', ')||'—')}</td>
+      <td class="num">${Number(i.qty||0)}</td>
+      <td class="num editable-num"><input type="number" step="0.01" min="0" value="${Number(i.minQty||0)}" data-min-input="${esc(i.id)}"></td>
+      <td><span class="tag ${s}"><span class="status-dot ${s}"></span>${statusLabel(s)}</span></td>
+      <td><button class="btn btn-sm" data-edit-item="${esc(i.id)}">Editar</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-min-input]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+      const id = inp.getAttribute('data-min-input');
+      const val = Number(inp.value||0);
+      try{
+        const cur = state.stock[id];
+        await state.db.doc('stock/'+id).set(Object.assign({}, cur, {minQty: val, updatedAt: new Date().toISOString()}));
+        toast('Estoque mínimo atualizado', 'success');
+      }catch(e){ toast('Erro ao salvar: '+e.message, 'error'); }
+    });
+  });
+  tbody.querySelectorAll('[data-edit-item]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openItemModal(btn.getAttribute('data-edit-item')));
+  });
+}
+
+function renderComprasFornecedores(){
+  const wrap = document.getElementById('compras-fornecedores');
+  const selected = new Set([...wrap.querySelectorAll('.chip.on')].map(c=>c.getAttribute('data-f')));
+  wrap.innerHTML = allFornecedores().map(f=>`<div class="chip ${selected.has(f)?'on':''}" data-f="${esc(f)}">${esc(f)}</div>`).join('');
+  wrap.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=> chip.classList.toggle('on'));
+  });
+}
+
+function renderPosicaoTab(){
+  const sel = document.getElementById('posicao-filtro-setor');
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">Todos os setores</option>' + allSetores().map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  sel.value = curVal;
+
+  const selF = document.getElementById('posicao-filtro-fornecedor');
+  const curValF = selF.value;
+  selF.innerHTML = '<option value="">Todos os fornecedores</option>' + allFornecedores().map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  selF.value = curValF;
+
+  const items = sortedActiveItems();
+  const critical = items.filter(i=>itemStatus(i)==='critical').length;
+  const warn = items.filter(i=>itemStatus(i)==='warn').length;
+  document.getElementById('posicao-stats').innerHTML = `
+    <div class="stat-tile"><div class="label">Total de itens</div><div class="value">${items.length}</div></div>
+    <div class="stat-tile critical"><div class="label">Zerados</div><div class="value">${critical}</div></div>
+    <div class="stat-tile warn"><div class="label">Abaixo do mínimo</div><div class="value">${warn}</div></div>
+  `;
+
+  const busca = (document.getElementById('posicao-busca').value||'').toLowerCase();
+  const setorF = document.getElementById('posicao-filtro-setor').value;
+  const fornecedorF = document.getElementById('posicao-filtro-fornecedor').value;
+  const statusF = document.getElementById('posicao-filtro-status').value;
+  const filtered = items.filter(i=>{
+    if(busca && !i.nome.toLowerCase().includes(busca)) return false;
+    if(setorF && !(i.setores||[]).includes(setorF)) return false;
+    if(fornecedorF && !(i.fornecedores||[]).includes(fornecedorF)) return false;
+    if(statusF && itemStatus(i)!==statusF) return false;
+    return true;
+  }).sort((a,b)=>{
+    const order = {critical:0,warn:1,ok:2};
+    const so = order[itemStatus(a)]-order[itemStatus(b)];
+    return so!==0 ? so : a.nome.localeCompare(b.nome,'pt-BR');
+  });
+
+  const tbody = document.getElementById('posicao-tbody');
+  if(filtered.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">📊</span>Nenhum item encontrado.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(i=>{
+    const s = itemStatus(i);
+    return `<tr>
+      <td><b>${esc(i.nome)}</b></td>
+      <td>${esc((i.setores||[]).join(', ')||'—')}</td>
+      <td>${esc((i.fornecedores||[]).join(', ')||'—')}</td>
+      <td class="num">${Number(i.qty||0)} ${esc(i.unidade||'')}</td>
+      <td class="num">${Number(i.minQty||0)}</td>
+      <td><span class="tag ${s}"><span class="status-dot ${s}"></span>${statusLabel(s)}</span></td>
+      <td>${i.updatedAt ? fmtDateTimeBR(i.updatedAt) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/**
+ * Cruza o catálogo de insumos com as movimentações do período selecionado
+ * na aba Consumo, aplicando os filtros de busca/setor/fornecedor.
+ */
+function computeConsumo(){
+  const dataInicio = document.getElementById('consumo-data-inicio').value || todayISO();
+  const dataFim = document.getElementById('consumo-data-fim').value || todayISO();
+  const diasNoPeriodo = Math.max(1, Math.round((new Date(dataFim+'T00:00:00') - new Date(dataInicio+'T00:00:00'))/86400000) + 1);
+
+  const noPeriodo = allMovementEntries().filter(e=> e.date >= dataInicio && e.date <= dataFim);
+
+  const porItem = {};
+  noPeriodo.forEach(e=>{
+    if(e.tipo!=='entrada' && e.tipo!=='requisicao') return; // ajustes de inventário não contam como consumo
+    if(!porItem[e.itemId]) porItem[e.itemId] = {entradas:0, saidas:0};
+    if(e.tipo==='entrada') porItem[e.itemId].entradas += Number(e.qty)||0;
+    else porItem[e.itemId].saidas += Number(e.qty)||0;
+  });
+
+  const busca = (document.getElementById('consumo-busca').value||'').toLowerCase();
+  const setorF = document.getElementById('consumo-filtro-setor').value;
+  const fornecedorF = document.getElementById('consumo-filtro-fornecedor').value;
+
+  const items = sortedActiveItems().filter(i=>{
+    if(busca && !i.nome.toLowerCase().includes(busca)) return false;
+    if(setorF && !(i.setores||[]).includes(setorF)) return false;
+    if(fornecedorF && !(i.fornecedores||[]).includes(fornecedorF)) return false;
+    return true;
+  });
+
+  const rows = items.map(i=>{
+    const mov = porItem[i.id] || {entradas:0, saidas:0};
+    const saldo = mov.entradas - mov.saidas;
+    const mediaDia = mov.saidas / diasNoPeriodo;
+    const diasEstoque = mediaDia > 0 ? (Number(i.qty||0) / mediaDia) : null;
+    return {item:i, entradas:mov.entradas, saidas:mov.saidas, saldo, mediaDia, diasEstoque};
+  }).sort((a,b)=> b.saidas - a.saidas || a.item.nome.localeCompare(b.item.nome,'pt-BR'));
+
+  return {dataInicio, dataFim, diasNoPeriodo, rows};
+}
+
+function renderConsumoTab(){
+  const selS = document.getElementById('consumo-filtro-setor');
+  const curS = selS.value;
+  selS.innerHTML = '<option value="">Todos os setores</option>' + allSetores().map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  selS.value = curS;
+
+  const selF = document.getElementById('consumo-filtro-fornecedor');
+  const curF = selF.value;
+  selF.innerHTML = '<option value="">Todos os fornecedores</option>' + allFornecedores().map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  selF.value = curF;
+
+  if(!document.getElementById('consumo-data-inicio').value || !document.getElementById('consumo-data-fim').value) return;
+
+  const {dataInicio, dataFim, rows} = computeConsumo();
+
+  const totalEntradas = rows.reduce((s,r)=>s+r.entradas,0);
+  const totalSaidas = rows.reduce((s,r)=>s+r.saidas,0);
+  const semMovimento = rows.filter(r=> r.entradas===0 && r.saidas===0).length;
+  document.getElementById('consumo-stats').innerHTML = `
+    <div class="stat-tile"><div class="label">Período</div><div class="value" style="font-size:15px;">${fmtDateBR(dataInicio)} – ${fmtDateBR(dataFim)}</div></div>
+    <div class="stat-tile ok"><div class="label">Total de entradas</div><div class="value">${fmtNum(totalEntradas)}</div></div>
+    <div class="stat-tile critical"><div class="label">Total de saídas</div><div class="value">${fmtNum(totalSaidas)}</div></div>
+    <div class="stat-tile"><div class="label">Itens sem movimento</div><div class="value">${semMovimento}</div></div>
+  `;
+
+  const tbody = document.getElementById('consumo-tbody');
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><span class="ic">📈</span>Nenhum item encontrado.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=>{
+    const i = r.item;
+    return `<tr>
+      <td><b>${esc(i.nome)}</b></td>
+      <td>${esc((i.setores||[]).join(', ')||'—')}</td>
+      <td>${esc((i.fornecedores||[]).join(', ')||'—')}</td>
+      <td class="num">${fmtNum(i.qty)} ${esc(i.unidade||'')}</td>
+      <td class="num" style="color:var(--ok);">+${fmtNum(r.entradas)}</td>
+      <td class="num" style="color:var(--critical);">-${fmtNum(r.saidas)}</td>
+      <td class="num">${r.saldo>=0?'+':''}${fmtNum(r.saldo)}</td>
+      <td class="num">${fmtNum(r.mediaDia)}</td>
+      <td class="num">${r.diasEstoque==null ? '—' : fmtNum(r.diasEstoque)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function movementRowHtml(e){
+  const tipoLabel = e.tipo==='entrada' ? '<span class="tag ok">Entrada</span>'
+    : e.tipo==='ajuste' ? '<span class="tag warn">Ajuste</span>'
+    : '<span class="tag critical">Requisição</span>';
+  const who = e.fornecedor || e.setor || '—';
+  const sinal = e.tipo==='entrada' ? '+' : e.tipo==='ajuste' ? (Number(e.delta||0)>=0?'+':'-') : '-';
+  return `<tr>
+    <td>${fmtDateBR(e.date)}</td>
+    <td>${tipoLabel}</td>
+    <td>${esc(e.itemName)}</td>
+    <td class="num">${sinal}${fmtNum(e.qty)} ${esc(e.unidade||'')}</td>
+    <td>${esc(who)}</td>
+    <td>${esc(e.responsavel||'—')}</td>
+    <td>${esc(e.obs||'—')}</td>
+  </tr>`;
+}
+
+let estoqueMovFilter = 'todos';
+let histMovFilter = 'todos';
+
+function renderMovementTables(){
+  const all = allMovementEntries();
+
+  const recent = all.filter(e=> estoqueMovFilter==='todos' || e.tipo===estoqueMovFilter).slice(0,12);
+  const tEstoque = document.getElementById('estoque-mov-tbody');
+  tEstoque.innerHTML = recent.length ? recent.map(movementRowHtml).join('') : `<tr><td colspan="7" class="empty-state">Nenhuma movimentação ainda.</td></tr>`;
+
+  const busca = (document.getElementById('hist-busca').value||'').toLowerCase();
+  const histFiltered = all.filter(e=>{
+    if(histMovFilter!=='todos' && e.tipo!==histMovFilter) return false;
+    if(busca && !(e.itemName.toLowerCase().includes(busca) || (e.responsavel||'').toLowerCase().includes(busca))) return false;
+    return true;
+  }).slice(0,500);
+  const tHist = document.getElementById('hist-tbody');
+  tHist.innerHTML = histFiltered.length ? histFiltered.map(movementRowHtml).join('') : `<tr><td colspan="7" class="empty-state">Nenhuma movimentação encontrada.</td></tr>`;
+}
+
+/* ========================================================================
+   NAV / TABS
+   ======================================================================== */
+const TAB_META = {
+  estoque: {title:'Estoque', sub:'Lançamentos de entrada, requisição e ajuste de estoque'},
+  itens: {title:'Itens / Catálogo', sub:'Cadastro de insumos, fornecedores e estoque mínimo'},
+  compras: {title:'Compras', sub:'Relatório de compras por fornecedor'},
+  consumo: {title:'Consumo de Insumos', sub:'Análise de estoque, entradas e saídas por período'},
+  posicao: {title:'Posição de Estoque', sub:'Relatório para enviar ao setor de Compras'},
+  historico: {title:'Histórico', sub:'Todas as movimentações de estoque'},
+  usuarios: {title:'Usuários', sub:'Cadastro e permissões de acesso'},
+};
+document.querySelectorAll('.nav-item').forEach(nav=>{
+  nav.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    nav.classList.add('active');
+    const tab = nav.getAttribute('data-tab');
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
+    document.getElementById('topbar-heading').textContent = TAB_META[tab].title;
+    document.getElementById('topbar-sub').textContent = TAB_META[tab].sub;
+    if(tab === 'usuarios') renderUsuariosTab();
+  });
+});
+
+/* ========================================================================
+   FORMS: Entrada / Requisição
+   ======================================================================== */
+document.getElementById('entrada-data').value = todayISO();
+document.getElementById('req-data').value = todayISO();
+addLineItemRow('entrada');
+addLineItemRow('req');
+document.getElementById('entrada-add-row').addEventListener('click', ()=> addLineItemRow('entrada'));
+document.getElementById('req-add-row').addEventListener('click', ()=> addLineItemRow('req'));
+
+document.getElementById('form-entrada').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  if(!state.db || !state.currentUser){ toast('Faça login para registrar movimentações.', 'error'); return; }
+  const {items, errors} = collectLineItems('entrada');
+  if(errors.length){ toast(errors[0], 'error'); return; }
+  if(items.length===0){ toast('Adicione ao menos um insumo com quantidade.', 'error'); return; }
+  const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
+  const shared = {
+    data: document.getElementById('entrada-data').value,
+    fornecedor: document.getElementById('entrada-fornecedor').value,
+    obs: document.getElementById('entrada-obs').value,
+  };
+  try{
+    const {okCount, failCount} = await registrarMovimentosEmLote('entrada', items, shared);
+    if(failCount===0) toast(`${okCount} insumo(s) registrado(s) como entrada.`, 'success');
+    else if(okCount===0) toast('Não foi possível registrar os itens selecionados.', 'error');
+    else toast(`${okCount} registrado(s), ${failCount} falharam.`, 'error');
+    if(entradaPedidoLinkId && okCount > 0){
+      try{ await applyPedidoRecebimento(entradaPedidoLinkId, items); }
+      catch(e){ console.error('Falha ao atualizar pedido vinculado', e); toast('Entrada registrada, mas houve erro ao atualizar o pedido vinculado.', 'error'); }
+    }
+    entradaPedidoLinkId = null;
+    document.getElementById('entrada-pedido-vinculado').style.display = 'none';
+    ev.target.reset();
+    resetLineItemForm('entrada');
+    document.getElementById('entrada-data').value = todayISO();
+    renderMovementTables();
+  }catch(e){ console.error(e); toast('Erro ao registrar entrada: '+e.message, 'error'); }
+  finally{ btn.disabled = false; }
+});
+
+document.getElementById('form-requisicao').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  if(!state.db || !state.currentUser){ toast('Faça login para registrar movimentações.', 'error'); return; }
+  const {items, errors} = collectLineItems('req');
+  if(errors.length){ toast(errors[0], 'error'); return; }
+  if(items.length===0){ toast('Adicione ao menos um insumo com quantidade.', 'error'); return; }
+
+  const totals = {};
+  items.forEach(it=>{ totals[it.itemId] = (totals[it.itemId]||0) + it.qtd; });
+  const negativos = Object.entries(totals).map(([itemId, qtd])=>{
+    const item = state.stock[itemId];
+    if(!item) return null;
+    const resto = Number(item.qty||0) - qtd;
+    return resto < 0 ? `${item.nome}: ${Number(item.qty||0)} − ${qtd}` : null;
+  }).filter(Boolean);
+  if(negativos.length){
+    if(!(await askConfirm(`Os itens abaixo ficarão com estoque negativo:\n\n${negativos.join('\n')}\n\nDeseja continuar mesmo assim?`))) return;
+  }
+
+  const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
+  const shared = {
+    data: document.getElementById('req-data').value,
+    setor: document.getElementById('req-setor').value,
+    obs: document.getElementById('req-obs').value,
+  };
+  try{
+    const {okCount, failCount} = await registrarMovimentosEmLote('requisicao', items, shared);
+    if(failCount===0) toast(`${okCount} insumo(s) registrado(s) como requisição.`, 'success');
+    else if(okCount===0) toast('Não foi possível registrar os itens selecionados.', 'error');
+    else toast(`${okCount} registrado(s), ${failCount} falharam.`, 'error');
+    ev.target.reset();
+    resetLineItemForm('req');
+    document.getElementById('req-data').value = todayISO();
+    renderMovementTables();
+  }catch(e){ console.error(e); toast('Erro ao registrar requisição: '+e.message, 'error'); }
+  finally{ btn.disabled = false; }
+});
+
+document.getElementById('estoque-mov-filter').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  estoqueMovFilter = btn.getAttribute('data-f');
+  renderMovementTables();
+});
+document.getElementById('hist-mov-filter').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  histMovFilter = btn.getAttribute('data-f');
+  renderMovementTables();
+});
+document.getElementById('hist-busca').addEventListener('input', renderMovementTables);
+
+/* ========================================================================
+   ITENS TAB — search, modal add/edit
+   ======================================================================== */
+document.getElementById('itens-busca').addEventListener('input', renderItensTab);
+
+function openItemModal(itemId){
+  const isNew = !itemId;
+  document.getElementById('modal-item-title').textContent = isNew ? 'Novo item' : 'Editar item';
+  document.getElementById('item-id-edit').value = itemId || '';
+  const item = itemId ? state.stock[itemId] : null;
+  document.getElementById('item-nome').value = item ? item.nome : '';
+  document.getElementById('item-unidade').value = item ? (item.unidade||'') : '';
+  document.getElementById('item-min').value = item ? Number(item.minQty||0) : 0;
+  document.getElementById('item-setores').value = item ? (item.setores||[]).join(', ') : '';
+  document.getElementById('item-fornecedores').value = item ? (item.fornecedores||[]).join(', ') : '';
+  document.getElementById('item-dias-compra').value = item ? (item.diasCompra||[]).join(', ') : '';
+  document.getElementById('item-dias-entrega').value = item ? (item.diasEntrega||[]).join(', ') : '';
+  document.getElementById('item-obs').value = item ? (item.observacoes||'') : '';
+  document.getElementById('btn-desativar-item').style.display = isNew ? 'none' : 'inline-flex';
+  document.getElementById('modal-item').style.display = 'flex';
+}
+document.getElementById('btn-novo-item').addEventListener('click', ()=> openItemModal(null));
+
+document.getElementById('btn-salvar-item').addEventListener('click', async ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const nome = document.getElementById('item-nome').value.trim();
+  if(!nome){ toast('Informe o nome do insumo.', 'error'); return; }
+  const id = document.getElementById('item-id-edit').value;
+  const data = {
+    nome,
+    unidade: document.getElementById('item-unidade').value.trim() || 'un',
+    minQty: Number(document.getElementById('item-min').value||0),
+    setores: splitList(document.getElementById('item-setores').value),
+    fornecedores: splitList(document.getElementById('item-fornecedores').value),
+    diasCompra: splitList(document.getElementById('item-dias-compra').value),
+    diasEntrega: splitList(document.getElementById('item-dias-entrega').value),
+    observacoes: document.getElementById('item-obs').value.trim(),
+  };
+  if(id) data.qty = Number((state.stock[id]||{}).qty || 0);
+  else data.qty = 0;
+  try{
+    await saveItem(Object.assign({id}, data), !id);
+    toast('Item salvo.', 'success');
+    closeModal('modal-item');
+  }catch(e){ console.error(e); toast('Erro ao salvar item: '+e.message, 'error'); }
+});
+document.getElementById('btn-desativar-item').addEventListener('click', async ()=>{
+  if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const id = document.getElementById('item-id-edit').value;
+  if(!id) return;
+  if(!(await askConfirm('Desativar este item? Ele deixará de aparecer nas listas, mas o histórico é mantido.'))) return;
+  try{ await setItemAtivo(id, false); toast('Item desativado.', 'success'); closeModal('modal-item'); }
+  catch(e){ toast('Erro: '+e.message, 'error'); }
+});
+
+/* ========================================================================
+   MODAL helpers
+   ======================================================================== */
+function closeModal(id){ document.getElementById(id).style.display = 'none'; }
+document.querySelectorAll('[data-close-modal]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close-modal')));
+});
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+  bd.addEventListener('click', (ev)=>{ if(ev.target===bd) bd.style.display='none'; });
+});
+
+// Diálogo de confirmação nativo (confirm()) não funciona dentro da página publicada,
+// por isso usamos um modal próprio no lugar de window.confirm().
+function askConfirm(message){
+  return new Promise((resolve)=>{
+    const backdrop = document.getElementById('modal-confirm-generic');
+    document.getElementById('confirm-generic-msg').textContent = message;
+    backdrop.style.display = 'flex';
+    const btnYes = document.getElementById('confirm-generic-yes');
+    const btnNo = document.getElementById('confirm-generic-no');
+    function finish(result){
+      backdrop.style.display = 'none';
+      btnYes.removeEventListener('click', onYes);
+      btnNo.removeEventListener('click', onNo);
+      backdrop.removeEventListener('click', onBackdropClick);
+      resolve(result);
+    }
+    function onYes(){ finish(true); }
+    function onNo(){ finish(false); }
+    function onBackdropClick(ev){ if(ev.target===backdrop) finish(false); }
+    btnYes.addEventListener('click', onYes);
+    btnNo.addEventListener('click', onNo);
+    backdrop.addEventListener('click', onBackdropClick);
+  });
+}
+
+/* ========================================================================
+   CONTAGEM (print)
+   ======================================================================== */
+let contagemModo = 'cega';
+document.getElementById('btn-abrir-contagem').addEventListener('click', ()=>{
+  const wrap = document.getElementById('contagem-setores');
+  const setores = allSetores();
+  wrap.innerHTML = setores.map(s=>`<div class="chip on" data-s="${esc(s)}">${esc(s)}</div>`).join('');
+  wrap.querySelectorAll('.chip').forEach(chip=> chip.addEventListener('click', ()=> chip.classList.toggle('on')));
+  document.getElementById('modal-contagem').style.display = 'flex';
+});
+document.getElementById('contagem-modo').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  contagemModo = btn.getAttribute('data-m');
+});
+
+document.getElementById('btn-imprimir-contagem').addEventListener('click', ()=>{
+  const setoresSel = new Set([...document.querySelectorAll('#contagem-setores .chip.on')].map(c=>c.getAttribute('data-s')));
+  const items = sortedActiveItems().filter(i=> (i.setores||[]).some(s=>setoresSel.has(s)) || setoresSel.size===0);
+  const bySetor = {};
+  items.forEach(i=>{
+    const setorKey = (i.setores||['Sem setor'])[0];
+    (bySetor[setorKey] = bySetor[setorKey]||[]).push(i);
+  });
+  const showStock = contagemModo === 'com-estoque';
+  let html = `<div class="print-header"><h2>Relação de Contagem de Inventário — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}<br>Modo: ${showStock?'Com estoque do sistema':'Contagem cega'}</div></div>`;
+  Object.keys(bySetor).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(setor=>{
+    html += `<div class="print-group">${esc(setor)}</div>`;
+    html += `<table class="print-table"><thead><tr><th style="width:26px;">#</th><th>Insumo</th><th style="width:60px;">Un.</th>`
+      + (showStock ? `<th style="width:80px;">Estoque Sistema</th>` : ``)
+      + `<th class="print-blank-col">Contagem Física</th><th>Obs.</th></tr></thead><tbody>`;
+    bySetor[setor].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).forEach((it,idx)=>{
+      html += `<tr><td>${idx+1}</td><td>${esc(it.nome)}</td><td>${esc(it.unidade||'un')}</td>`
+        + (showStock ? `<td>${Number(it.qty||0)}</td>` : ``)
+        + `<td></td><td></td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+  document.getElementById('print-area').innerHTML = html;
+  closeModal('modal-contagem');
+  setTimeout(()=> window.print(), 80);
+});
+
+/* ========================================================================
+   AJUSTE DE ESTOQUE — lançamento da contagem física + relatório de divergências
+   ======================================================================== */
+document.getElementById('btn-abrir-ajuste').addEventListener('click', ()=>{
+  const area = document.getElementById('ajuste-area');
+  const opening = area.style.display === 'none';
+  area.style.display = opening ? 'block' : 'none';
+  if(opening){
+    const wrap = document.getElementById('ajuste-setores');
+    wrap.innerHTML = allSetores().map(s=>`<div class="chip on" data-s="${esc(s)}">${esc(s)}</div>`).join('');
+    wrap.querySelectorAll('.chip').forEach(chip=> chip.addEventListener('click', ()=> chip.classList.toggle('on')));
+    document.getElementById('ajuste-tbody').innerHTML = '';
+    document.getElementById('ajuste-table-wrap').style.display = 'none';
+    document.getElementById('ajuste-actions').style.display = 'none';
+    document.getElementById('ajuste-busca').style.display = 'none';
+    document.getElementById('ajuste-busca').value = '';
+    document.getElementById('card-divergencias').style.display = 'none';
+  }
+});
+
+document.getElementById('btn-carregar-ajuste').addEventListener('click', ()=>{
+  const setoresSel = new Set([...document.querySelectorAll('#ajuste-setores .chip.on')].map(c=>c.getAttribute('data-s')));
+  const items = sortedActiveItems().filter(i=> setoresSel.size===0 || (i.setores||[]).some(s=>setoresSel.has(s)));
+  if(items.length===0){ toast('Nenhum item para os setores selecionados.', 'error'); return; }
+
+  const tbody = document.getElementById('ajuste-tbody');
+  tbody.innerHTML = items.map(i=>`<tr data-id="${esc(i.id)}" data-nome="${esc(i.nome.toLowerCase())}">
+    <td><b>${esc(i.nome)}</b></td>
+    <td>${esc(i.unidade||'un')}</td>
+    <td class="num">${fmtNum(i.qty)}</td>
+    <td class="num editable-num"><input type="number" step="0.01" class="ajuste-contagem-input" placeholder="—"></td>
+    <td class="num ajuste-divergencia-cell">—</td>
+    <td><input type="text" class="ajuste-motivo-input" placeholder="Motivo da divergência" disabled></td>
+  </tr>`).join('');
+
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.getAttribute('data-id');
+    const item = state.stock[id];
+    const contagemInp = tr.querySelector('.ajuste-contagem-input');
+    const divCell = tr.querySelector('.ajuste-divergencia-cell');
+    const motivoInp = tr.querySelector('.ajuste-motivo-input');
+    contagemInp.addEventListener('input', ()=>{
+      if(contagemInp.value===''){
+        divCell.textContent = '—'; divCell.style.color = '';
+        motivoInp.disabled = true; motivoInp.value = '';
+        return;
+      }
+      const contagem = Number(contagemInp.value);
+      const div = Number((contagem - Number(item.qty||0)).toFixed(4));
+      divCell.textContent = (div>0?'+':'') + fmtNum(div);
+      divCell.style.color = div===0 ? '' : (div>0 ? 'var(--ok)' : 'var(--critical)');
+      motivoInp.disabled = div===0;
+      if(div===0) motivoInp.value = '';
+    });
+  });
+
+  document.getElementById('ajuste-table-wrap').style.display = 'block';
+  document.getElementById('ajuste-actions').style.display = 'flex';
+  document.getElementById('ajuste-busca').style.display = 'block';
+});
+
+document.getElementById('ajuste-busca').addEventListener('input', ()=>{
+  const q = document.getElementById('ajuste-busca').value.toLowerCase();
+  document.querySelectorAll('#ajuste-tbody tr').forEach(tr=>{
+    tr.style.display = (!q || tr.getAttribute('data-nome').includes(q)) ? '' : 'none';
+  });
+});
+
+document.getElementById('btn-cancelar-ajuste').addEventListener('click', ()=>{
+  document.getElementById('ajuste-area').style.display = 'none';
+});
+
+document.getElementById('btn-aplicar-ajuste').addEventListener('click', async ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para aplicar ajustes de estoque.', 'error'); return; }
+
+  const rows = [...document.querySelectorAll('#ajuste-tbody tr')];
+  const counted = [];
+  const missingMotivo = [];
+  rows.forEach(tr=>{
+    const contagemInp = tr.querySelector('.ajuste-contagem-input');
+    if(contagemInp.value === '') return; // item não contado nesta rodada — ignora
+    const id = tr.getAttribute('data-id');
+    const item = state.stock[id];
+    const contagem = Number(contagemInp.value);
+    const divergencia = Number((contagem - Number(item.qty||0)).toFixed(4));
+    const motivo = tr.querySelector('.ajuste-motivo-input').value.trim();
+    if(divergencia !== 0 && !motivo){ missingMotivo.push(item.nome); return; }
+    counted.push({itemId:id, item, contagem, estoqueAnterior:Number(item.qty||0), divergencia, motivo});
+  });
+
+  if(missingMotivo.length){
+    toast(`Informe o motivo da divergência para: ${missingMotivo.slice(0,3).join(', ')}${missingMotivo.length>3?' e outros':''}`, 'error');
+    return;
+  }
+  if(counted.length===0){ toast('Informe ao menos uma contagem física para aplicar o ajuste.', 'error'); return; }
+
+  const divergentes = counted.filter(c=> c.divergencia !== 0);
+  const btn = document.getElementById('btn-aplicar-ajuste'); btn.disabled = true;
+  const responsavel = state.currentUser ? state.currentUser.nome : 'Não informado';
+  const dataAjuste = todayISO();
+  const entries = [];
+  let okCount = 0, failCount = 0;
+
+  for(const r of divergentes){
+    try{
+      await updateStockQty(r.itemId, r.divergencia);
+      entries.push({
+        id: uid(), ts: new Date().toISOString(), tipo: 'ajuste',
+        itemId: r.itemId, itemName: r.item.nome, unidade: r.item.unidade || 'un',
+        qty: Math.abs(r.divergencia), delta: r.divergencia,
+        estoqueAnterior: r.estoqueAnterior, contagem: r.contagem,
+        fornecedor: '', setor: (r.item.setores||[])[0] || '',
+        responsavel, obs: 'Ajuste por contagem — ' + r.motivo, motivo: r.motivo,
+      });
+      okCount++;
+    }catch(e){ console.error('Falha ao ajustar item', r.itemId, e); failCount++; }
+  }
+  if(entries.length){
+    await appendMovements(dataAjuste, entries);
+  }
+  btn.disabled = false;
+
+  const semDivergencia = counted.length - divergentes.length;
+  if(failCount===0) toast(`Contagem processada: ${okCount} ajuste(s) aplicado(s), ${semDivergencia} sem divergência.`, 'success');
+  else toast(`${okCount} ajuste(s) aplicado(s), ${failCount} falharam.`, 'error');
+
+  renderDivergenciasReport(entries, dataAjuste, responsavel);
+  document.getElementById('ajuste-area').style.display = 'none';
+  renderMovementTables();
+  renderConsumoTab();
+});
+
+function renderDivergenciasReport(entries, dataAjuste, responsavel){
+  const card = document.getElementById('card-divergencias');
+  const tbody = document.getElementById('divergencias-tbody');
+  document.getElementById('divergencias-sub').textContent = `Contagem de ${fmtDateBR(dataAjuste)} — ${entries.length} divergência(s) encontrada(s)`;
+  if(entries.length===0){
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">✅</span>Nenhuma divergência — contagem confere com o sistema.</td></tr>`;
+  } else {
+    tbody.innerHTML = entries.map(e=>`<tr>
+      <td><b>${esc(e.itemName)}</b></td>
+      <td>${esc(e.setor||'—')}</td>
+      <td class="num">${fmtNum(e.estoqueAnterior)}</td>
+      <td class="num">${fmtNum(e.contagem)}</td>
+      <td class="num" style="color:${e.delta>=0?'var(--ok)':'var(--critical)'};">${e.delta>=0?'+':''}${fmtNum(e.delta)}</td>
+      <td>${esc(e.motivo||'—')}</td>
+      <td>${esc(responsavel)}</td>
+    </tr>`).join('');
+  }
+  card.dataset.dataAjuste = dataAjuste;
+  card._entries = entries;
+  card._responsavel = responsavel;
+  card.style.display = 'block';
+  card.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+document.getElementById('divergencias-imprimir').addEventListener('click', ()=>{
+  const card = document.getElementById('card-divergencias');
+  const entries = card._entries || [];
+  const dataAjuste = card.dataset.dataAjuste || todayISO();
+  const responsavel = card._responsavel || (state.currentUser ? state.currentUser.nome : '—');
+  let html = `<div class="print-header"><h2>Relatório de Divergências de Inventário — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Contagem de ${fmtDateBR(dataAjuste)}<br>Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(responsavel)}</div></div>`;
+  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Estoque Sistema</th><th>Contagem Física</th><th>Divergência</th><th>Motivo</th></tr></thead><tbody>`;
+  if(entries.length===0){
+    html += `<tr><td colspan="6">Nenhuma divergência — contagem confere com o sistema.</td></tr>`;
+  } else {
+    entries.forEach(e=>{
+      html += `<tr><td>${esc(e.itemName)}</td><td>${esc(e.setor||'—')}</td><td>${fmtNum(e.estoqueAnterior)}</td><td>${fmtNum(e.contagem)}</td><td>${e.delta>=0?'+':''}${fmtNum(e.delta)}</td><td>${esc(e.motivo||'—')}</td></tr>`;
+    });
+  }
+  html += `</tbody></table>`;
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(()=> window.print(), 80);
+});
+
+document.getElementById('divergencias-baixar-csv').addEventListener('click', async ()=>{
+  const card = document.getElementById('card-divergencias');
+  const entries = card._entries || [];
+  const responsavel = card._responsavel || '';
+  const rows = [['Insumo','Setor','Estoque Sistema','Contagem Fisica','Divergencia','Motivo','Responsavel']];
+  entries.forEach(e=> rows.push([e.itemName, e.setor||'', fmtNum(e.estoqueAnterior), fmtNum(e.contagem), fmtNum(e.delta), e.motivo||'', responsavel]));
+  await downloadCsv(rows, 'divergencias_inventario_kadan.csv');
+});
+
+/* ========================================================================
+   COMPRAS report
+   ======================================================================== */
+document.getElementById('compras-sel-todos').addEventListener('click', ()=>{
+  document.querySelectorAll('#compras-fornecedores .chip').forEach(c=>c.classList.add('on'));
+});
+document.getElementById('compras-sel-nenhum').addEventListener('click', ()=>{
+  document.querySelectorAll('#compras-fornecedores .chip').forEach(c=>c.classList.remove('on'));
+});
+
+function comprasSelectedItems(){
+  const selected = new Set([...document.querySelectorAll('#compras-fornecedores .chip.on')].map(c=>c.getAttribute('data-f')));
+  const soAbaixoMin = document.getElementById('compras-so-abaixo-min').checked;
+  let items = sortedActiveItems().filter(i=> selected.size===0 || (i.fornecedores||[]).some(f=>selected.has(f)));
+  if(soAbaixoMin) items = items.filter(i=> itemStatus(i)!=='ok');
+  return items.sort((a,b)=>{
+    const fa = (a.fornecedores||[''])[0], fb=(b.fornecedores||[''])[0];
+    return fa.localeCompare(fb,'pt-BR') || a.nome.localeCompare(b.nome,'pt-BR');
+  });
+}
+
+/* Quantidades pedidas por item (persistem enquanto a aba estiver aberta,
+   mesmo que o relatório seja gerado novamente com outros filtros) */
+let pedidoQtds = {};
+
+function renderComprasPreview(){
+  const items = comprasSelectedItems();
+  const card = document.getElementById('compras-preview-card');
+  const tbody = document.getElementById('compras-preview-tbody');
+  document.getElementById('compras-preview-sub').textContent = `${items.length} item(ns) encontrados — preencha a quantidade pedida de cada item`;
+  if(items.length===0){ tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Nenhum item para os filtros selecionados.</td></tr>`; }
+  else{
+    tbody.innerHTML = items.map(i=>{
+      const s = itemStatus(i);
+      const qtdPedida = pedidoQtds[i.id] != null ? pedidoQtds[i.id] : '';
+      return `<tr>
+        <td><b>${esc((i.fornecedores||[]).join(', ')||'—')}</b></td>
+        <td>${esc(i.nome)}</td>
+        <td>${esc(i.unidade||'un')}</td>
+        <td class="num">${Number(i.qty||0)}</td>
+        <td class="num">${Number(i.minQty||0)}</td>
+        <td class="num editable-num"><input type="number" min="0" step="0.01" placeholder="0" value="${esc(qtdPedida)}" data-pedido-qtd="${esc(i.id)}"></td>
+        <td>${esc((i.setores||[]).join(', ')||'—')}</td>
+        <td>${esc((i.diasCompra||[]).join(', ')||'—')}</td>
+        <td>${esc((i.diasEntrega||[]).join(', ')||'—')}</td>
+        <td>${esc(i.observacoes||'—')}</td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('[data-pedido-qtd]').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const id = inp.getAttribute('data-pedido-qtd');
+        if(inp.value === '') delete pedidoQtds[id];
+        else pedidoQtds[id] = inp.value;
+      });
+    });
+  }
+  card.style.display = 'block';
+}
+
+document.getElementById('btn-gerar-relatorio-compras').addEventListener('click', ()=>{
+  renderComprasPreview();
+  document.getElementById('compras-preview-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+
+document.getElementById('compras-imprimir').addEventListener('click', ()=>{
+  const items = comprasSelectedItems();
+  const byF = {};
+  items.forEach(i=>{ const f=(i.fornecedores||['Sem fornecedor'])[0]; (byF[f]=byF[f]||[]).push(i); });
+  let html = `<div class="print-header"><h2>Relatório de Compras — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}</div></div>`;
+  Object.keys(byF).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(f=>{
+    html += `<div class="print-group">${esc(f)}</div>`;
+    html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Un.</th><th>Dias de compra</th><th>Dias de entrega</th><th>Estoque</th><th>Mínimo</th><th>Observações</th></tr></thead><tbody>`;
+    byF[f].forEach(i=>{
+      html += `<tr><td>${esc(i.nome)}</td><td>${esc(i.unidade||'un')}</td><td>${esc((i.diasCompra||[]).join(', ')||'—')}</td><td>${esc((i.diasEntrega||[]).join(', ')||'—')}</td><td>${Number(i.qty||0)}</td><td>${Number(i.minQty||0)}</td><td>${esc(i.observacoes||'—')}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(()=> window.print(), 80);
+});
+
+document.getElementById('compras-imprimir-pedido').addEventListener('click', ()=>{
+  const items = comprasSelectedItems().filter(i=> Number(pedidoQtds[i.id]) > 0);
+  if(items.length===0){ toast('Preencha a quantidade pedida de ao menos um item antes de imprimir.', 'error'); return; }
+  const byF = {};
+  items.forEach(i=>{ const f=(i.fornecedores||['Sem fornecedor'])[0]; (byF[f]=byF[f]||[]).push(i); });
+  let html = `<div class="print-header"><h2>Pedido de Compra — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}</div></div>`;
+  Object.keys(byF).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(f=>{
+    html += `<div class="print-group">${esc(f)}</div>`;
+    html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Un.</th><th>Quantidade Pedida</th><th>Observações</th></tr></thead><tbody>`;
+    byF[f].forEach(i=>{
+      html += `<tr><td>${esc(i.nome)}</td><td>${esc(i.unidade||'un')}</td><td><b>${fmtNum(pedidoQtds[i.id])}</b></td><td>${esc(i.observacoes||'—')}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(()=> window.print(), 80);
+});
+
+document.getElementById('compras-baixar-csv').addEventListener('click', async ()=>{
+  const items = comprasSelectedItems();
+  const rows = [['Fornecedor','Insumo','Unidade','Qtd Pedida','Setor','Dias de Compra','Dias de Entrega','Estoque Atual','Estoque Minimo','Observacoes']];
+  items.forEach(i=> rows.push([(i.fornecedores||[]).join('; '), i.nome, i.unidade||'un', pedidoQtds[i.id] != null ? pedidoQtds[i.id] : '', (i.setores||[]).join('; '), (i.diasCompra||[]).join('; '), (i.diasEntrega||[]).join('; '), Number(i.qty||0), Number(i.minQty||0), i.observacoes||'']));
+  await downloadCsv(rows, 'relatorio_compras_kadan.csv');
+});
+
+/* ========================================================================
+   PEDIDOS DE COMPRA — salvar, consultar e vincular ao recebimento
+   ======================================================================== */
+document.getElementById('compras-salvar-pedido').addEventListener('click', async ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para salvar pedidos de compra.', 'error'); return; }
+  const items = comprasSelectedItems().filter(i=> Number(pedidoQtds[i.id]) > 0);
+  if(items.length===0){ toast('Preencha a quantidade pedida de ao menos um item antes de salvar.', 'error'); return; }
+
+  const byF = {};
+  items.forEach(i=>{ const f=(i.fornecedores||['Sem fornecedor'])[0]; (byF[f]=byF[f]||[]).push(i); });
+  const btn = document.getElementById('compras-salvar-pedido'); btn.disabled = true;
+  const criadoEm = new Date().toISOString();
+  const criadoPor = state.currentUser.nome;
+  let pedidosCriados = 0;
+  try{
+    for(const fornecedor of Object.keys(byF)){
+      const itens = byF[fornecedor].map(i=>({
+        itemId: i.id, itemName: i.nome, unidade: i.unidade || 'un',
+        qtdPedida: Number(pedidoQtds[i.id]), qtdRecebida: 0,
+      }));
+      const id = 'ped-' + uid();
+      await state.db.doc('pedidos/'+id).set({
+        fornecedor, itens, status: 'aberto',
+        criadoEm, criadoPor,
+      });
+      pedidosCriados++;
+    }
+    toast(`${pedidosCriados} pedido(s) de compra salvo(s) para ${Object.keys(byF).length} fornecedor(es).`, 'success');
+    pedidoQtds = {};
+    renderComprasPreview();
+  }catch(e){ console.error(e); toast('Erro ao salvar pedido: '+e.message, 'error'); }
+  finally{ btn.disabled = false; }
+});
+
+function pedidoTotals(pedido){
+  let pedida = 0, recebida = 0;
+  (pedido.itens||[]).forEach(it=>{ pedida += Number(it.qtdPedida||0); recebida += Number(it.qtdRecebida||0); });
+  return {pedida, recebida};
+}
+function pedidoStatusInfo(status){
+  if(status==='concluido') return {label:'Concluído', tag:'ok'};
+  if(status==='parcial') return {label:'Parcial', tag:'warn'};
+  if(status==='cancelado') return {label:'Cancelado', tag:'critical'};
+  return {label:'Aberto', tag:'neutral'};
+}
+function sortedPedidos(){
+  return Object.values(state.pedidos).sort((a,b)=> (b.criadoEm||'').localeCompare(a.criadoEm||''));
+}
+
+let pedidosStatusFiltro = 'todos';
+document.getElementById('pedidos-filtro-status').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  pedidosStatusFiltro = btn.getAttribute('data-f');
+  renderPedidosTab();
+});
+document.getElementById('pedidos-busca').addEventListener('input', renderPedidosTab);
+
+function renderPedidosTab(){
+  const tbody = document.getElementById('pedidos-tbody');
+  if(!tbody) return;
+  const busca = (document.getElementById('pedidos-busca').value||'').toLowerCase();
+  let pedidos = sortedPedidos().filter(p=>{
+    if(pedidosStatusFiltro!=='todos' && p.status!==pedidosStatusFiltro) return false;
+    if(busca){
+      const matchesFornecedor = (p.fornecedor||'').toLowerCase().includes(busca);
+      const matchesItem = (p.itens||[]).some(it=> it.itemName.toLowerCase().includes(busca));
+      if(!matchesFornecedor && !matchesItem) return false;
+    }
+    return true;
+  });
+  if(pedidos.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">📑</span>Nenhum pedido encontrado.</td></tr>`; return; }
+  tbody.innerHTML = pedidos.map(p=>{
+    const {pedida, recebida} = pedidoTotals(p);
+    const info = pedidoStatusInfo(p.status);
+    return `<tr data-id="${esc(p.id)}">
+      <td>${fmtDateTimeBR(p.criadoEm)}</td>
+      <td><b>${esc(p.fornecedor||'—')}</b></td>
+      <td>${(p.itens||[]).length}</td>
+      <td class="num">${fmtNum(pedida)}</td>
+      <td class="num">${fmtNum(recebida)}</td>
+      <td><span class="tag ${info.tag}">${info.label}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm" data-exportar-pedido="${esc(p.id)}">⬇️ Exportar</button>
+          <button class="btn btn-sm" data-ver-pedido="${esc(p.id)}">Ver</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-ver-pedido]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openPedidoModal(btn.getAttribute('data-ver-pedido')));
+  });
+  tbody.querySelectorAll('[data-exportar-pedido]').forEach(btn=>{
+    btn.addEventListener('click', ()=> exportPedido(btn.getAttribute('data-exportar-pedido')));
+  });
+}
+
+function openPedidoModal(id){
+  const pedido = state.pedidos[id];
+  if(!pedido) return;
+  const info = pedidoStatusInfo(pedido.status);
+  document.getElementById('modal-pedido-title').textContent = `Pedido — ${pedido.fornecedor||'—'}`;
+  document.getElementById('modal-pedido-sub').textContent = `Salvo em ${fmtDateTimeBR(pedido.criadoEm)} por ${pedido.criadoPor||'—'} · Status: ${info.label}`;
+  document.getElementById('modal-pedido-itens').innerHTML = (pedido.itens||[]).map(it=>{
+    const pendente = Math.max(0, Number((Number(it.qtdPedida||0) - Number(it.qtdRecebida||0)).toFixed(4)));
+    return `<tr>
+      <td>${esc(it.itemName)}</td>
+      <td>${esc(it.unidade||'un')}</td>
+      <td class="num">${fmtNum(it.qtdPedida)}</td>
+      <td class="num">${fmtNum(it.qtdRecebida)}</td>
+      <td class="num">${fmtNum(pendente)}</td>
+    </tr>`;
+  }).join('');
+  const cancelBtn = document.getElementById('btn-cancelar-pedido');
+  cancelBtn.style.display = (pedido.status==='aberto' || pedido.status==='parcial') ? 'inline-flex' : 'none';
+  cancelBtn.setAttribute('data-pedido-id', id);
+  document.getElementById('modal-pedido-detalhe').style.display = 'flex';
+}
+
+document.getElementById('btn-cancelar-pedido').addEventListener('click', async ()=>{
+  if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const id = document.getElementById('btn-cancelar-pedido').getAttribute('data-pedido-id');
+  const pedido = state.pedidos[id];
+  if(!id || !pedido) return;
+  if(!(await askConfirm('Cancelar este pedido de compra? Ele deixará de aparecer nas buscas de recebimento.'))) return;
+  try{
+    await state.db.doc('pedidos/'+id).set(Object.assign({}, pedido, {status:'cancelado'}));
+    toast('Pedido cancelado.', 'success');
+    closeModal('modal-pedido-detalhe');
+  }catch(e){ console.error(e); toast('Erro ao cancelar pedido: '+e.message, 'error'); }
+});
+
+/* ---- vincular pedido salvo à Entrada de mercadoria (Estoque) ---- */
+let entradaPedidoLinkId = null;
+
+function pedidosAbertosMatching(query){
+  const q = (query||'').toLowerCase();
+  return sortedPedidos().filter(p=>{
+    if(p.status!=='aberto' && p.status!=='parcial') return false;
+    const {pedida, recebida} = pedidoTotals(p);
+    if(recebida >= pedida) return false;
+    if(!q) return true;
+    const matchesFornecedor = (p.fornecedor||'').toLowerCase().includes(q);
+    const matchesItem = (p.itens||[]).some(it=> it.itemName.toLowerCase().includes(q));
+    return matchesFornecedor || matchesItem;
+  }).slice(0,8);
+}
+
+function renderEntradaPedidoResultados(){
+  const input = document.getElementById('entrada-buscar-pedido');
+  const wrap = document.getElementById('entrada-pedido-resultados');
+  if(!input || document.activeElement !== input){ return; }
+  const matches = pedidosAbertosMatching(input.value);
+  if(matches.length===0){ wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.innerHTML = matches.map(p=>{
+    const {pedida, recebida} = pedidoTotals(p);
+    const info = pedidoStatusInfo(p.status);
+    return `<div class="pedido-resultado-item" data-link-pedido="${esc(p.id)}">
+      <b>${esc(p.fornecedor||'—')} — ${info.label}</b>
+      <span>${fmtDateTimeBR(p.criadoEm)} · ${(p.itens||[]).length} item(ns) · pedido ${fmtNum(pedida)} / recebido ${fmtNum(recebida)}</span>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-link-pedido]').forEach(el=>{
+    el.addEventListener('mousedown', (ev)=>{ ev.preventDefault(); linkPedidoToEntrada(el.getAttribute('data-link-pedido')); });
+  });
+  wrap.style.display = 'block';
+}
+
+document.getElementById('entrada-buscar-pedido').addEventListener('input', renderEntradaPedidoResultados);
+document.getElementById('entrada-buscar-pedido').addEventListener('focus', renderEntradaPedidoResultados);
+document.getElementById('entrada-buscar-pedido').addEventListener('blur', ()=>{
+  setTimeout(()=>{ document.getElementById('entrada-pedido-resultados').style.display = 'none'; }, 150);
+});
+
+function linkPedidoToEntrada(pedidoId){
+  const pedido = state.pedidos[pedidoId];
+  if(!pedido){ toast('Pedido não encontrado.', 'error'); return; }
+  const pendentes = (pedido.itens||[]).map(it=>({
+    itemId: it.itemId, itemName: it.itemName,
+    pendente: Number((Number(it.qtdPedida||0) - Number(it.qtdRecebida||0)).toFixed(4)),
+  })).filter(it=> it.pendente > 0 && state.stock[it.itemId] && state.stock[it.itemId].ativo !== false);
+  if(pendentes.length===0){ toast('Este pedido não tem itens pendentes com cadastro ativo.', 'error'); return; }
+
+  document.getElementById('entrada-fornecedor').value = pedido.fornecedor || '';
+  const container = document.getElementById('entrada-rows');
+  container.innerHTML = '';
+  pendentes.forEach(it=>{
+    const rowEl = addLineItemRow('entrada');
+    const sel = rowEl.querySelector('.line-item-select');
+    sel.value = it.itemId;
+    updateLineItemUnidade(sel);
+    rowEl.querySelector('.line-item-qty').value = it.pendente;
+  });
+
+  entradaPedidoLinkId = pedidoId;
+  document.getElementById('entrada-pedido-vinculado-texto').textContent =
+    `Vinculado ao pedido de ${esc(pedido.fornecedor||'—')} (${fmtDateBR((pedido.criadoEm||'').slice(0,10))}) — ${pendentes.length} item(ns) pendente(s)`;
+  document.getElementById('entrada-pedido-vinculado').style.display = 'flex';
+  document.getElementById('entrada-buscar-pedido').value = '';
+  document.getElementById('entrada-pedido-resultados').style.display = 'none';
+}
+
+document.getElementById('entrada-desvincular-pedido').addEventListener('click', ()=>{
+  entradaPedidoLinkId = null;
+  document.getElementById('entrada-pedido-vinculado').style.display = 'none';
+});
+
+async function applyPedidoRecebimento(pedidoId, itemsRecebidos){
+  const db = state.db; if(!db) return;
+  const ref = db.doc('pedidos/'+pedidoId);
+  try{ await ref.acquire({holder:'op-'+uid(), ttlMs:8000}); }catch(e){}
+  const snap = await ref.get();
+  if(!snap.exists) return;
+  const pedido = snap.data();
+  const itens = (pedido.itens||[]).map(it=> Object.assign({}, it));
+  itemsRecebidos.forEach(({itemId, qtd})=>{
+    const it = itens.find(x=>x.itemId===itemId);
+    if(it) it.qtdRecebida = Number((Number(it.qtdRecebida||0) + Number(qtd)).toFixed(4));
+  });
+  const allDone = itens.every(it=> Number(it.qtdRecebida||0) >= Number(it.qtdPedida||0) - 0.0001);
+  const anyReceived = itens.some(it=> Number(it.qtdRecebida||0) > 0);
+  const status = allDone ? 'concluido' : (anyReceived ? 'parcial' : 'aberto');
+  await ref.set(Object.assign({}, pedido, {itens, status}));
+}
+
+/* ---- exportar / importar pedido em Excel (.xlsx) — para levar entre máquinas com bancos separados ---- */
+const PEDIDO_XLSX_HEADERS = ['ID do Pedido','Fornecedor','Status','Criado em','Criado por','Item ID','Insumo','Unidade','Qtd. Pedida','Qtd. Recebida'];
+
+async function exportPedido(id){
+  const pedido = state.pedidos[id];
+  if(!pedido){ toast('Pedido não encontrado.', 'error'); return; }
+  if(typeof XLSX === 'undefined'){ toast('Biblioteca de planilha ainda carregando, tente novamente em instantes.', 'error'); return; }
+  const itens = pedido.itens||[];
+  if(itens.length===0){ toast('Este pedido não tem itens para exportar.', 'error'); return; }
+
+  const rows = [PEDIDO_XLSX_HEADERS];
+  itens.forEach(it=>{
+    rows.push([
+      pedido.id||id, pedido.fornecedor||'', pedido.status||'aberto', pedido.criadoEm||'', pedido.criadoPor||'',
+      it.itemId, it.itemName, it.unidade||'un', Number(it.qtdPedida||0), Number(it.qtdRecebida||0),
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:22},{wch:11},{wch:20},{wch:18},{wch:14},{wch:26},{wch:9},{wch:12},{wch:13}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
+  const arrayBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+
+  const fSlug = slugify(pedido.fornecedor||'pedido') || 'pedido';
+  const filename = `pedido_${fSlug}_${(pedido.criadoEm||'').slice(0,10)||todayISO()}.xlsx`;
+  if(state.downloads){
+    try{
+      await state.downloads.save({filename, data: arrayBuf});
+      toast('Pedido exportado. Confirme o download.', 'success');
+      return;
+    }catch(e){ console.error(e); }
+  }
+  toast('Download não disponível neste momento.', 'error');
+}
+
+document.getElementById('btn-importar-pedido').addEventListener('click', ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para importar pedidos.', 'error'); return; }
+  document.getElementById('input-importar-pedido').click();
+});
+
+document.getElementById('input-importar-pedido').addEventListener('change', async (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  try{
+    if(!state.db || !state.currentUser) throw new Error('faça login para continuar');
+    if(typeof XLSX === 'undefined') throw new Error('biblioteca de planilha ainda carregando, tente novamente em instantes');
+
+    const buf = await file.arrayBuffer();
+    let wb;
+    try{ wb = XLSX.read(buf, {type:'array'}); }
+    catch(e){ throw new Error('não foi possível ler o arquivo Excel'); }
+    const sheetName = wb.SheetNames[0];
+    if(!sheetName) throw new Error('a planilha está vazia');
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:''});
+    if(rows.length < 2) throw new Error('a planilha não contém itens');
+
+    const header = rows[0].map(h=> String(h||'').trim().toLowerCase());
+    const col = (...names)=>{ for(const n of names){ const i = header.indexOf(n); if(i!==-1) return i; } return -1; };
+    const idxId = col('id do pedido');
+    const idxFornecedor = col('fornecedor');
+    const idxStatus = col('status');
+    const idxCriadoEm = col('criado em');
+    const idxCriadoPor = col('criado por');
+    const idxItemId = col('item id');
+    const idxItemName = col('insumo');
+    const idxUnidade = col('unidade');
+    const idxQtdPedida = col('qtd. pedida','qtd pedida');
+    const idxQtdRecebida = col('qtd. recebida','qtd recebida');
+    if(idxItemId===-1 || idxItemName===-1 || idxQtdPedida===-1){
+      throw new Error('colunas esperadas não encontradas — use a planilha exportada por este sistema');
+    }
+
+    const dataRows = rows.slice(1).filter(r=> r[idxItemId] !== '' && r[idxItemId] != null);
+    if(dataRows.length===0) throw new Error('nenhum item encontrado na planilha');
+
+    const first = dataRows[0];
+    const id = (idxId!==-1 && first[idxId]) ? String(first[idxId]) : ('ped-' + uid());
+    const jaExistia = !!state.pedidos[id];
+    const statusRaw = idxStatus!==-1 ? String(first[idxStatus]||'').trim() : '';
+    const pedidoDoc = {
+      fornecedor: (idxFornecedor!==-1 && first[idxFornecedor]) ? String(first[idxFornecedor]) : 'Sem fornecedor',
+      criadoEm: (idxCriadoEm!==-1 && first[idxCriadoEm]) ? String(first[idxCriadoEm]) : new Date().toISOString(),
+      criadoPor: (idxCriadoPor!==-1 && first[idxCriadoPor]) ? String(first[idxCriadoPor]) : state.currentUser.nome,
+      status: ['aberto','parcial','concluido','cancelado'].includes(statusRaw) ? statusRaw : 'aberto',
+      itens: dataRows.map(r=>({
+        itemId: String(r[idxItemId]),
+        itemName: String(r[idxItemName]||''),
+        unidade: (idxUnidade!==-1 && r[idxUnidade]) ? String(r[idxUnidade]) : 'un',
+        qtdPedida: Number(r[idxQtdPedida]||0),
+        qtdRecebida: (idxQtdRecebida!==-1) ? Number(r[idxQtdRecebida]||0) : 0,
+      })),
+    };
+    if(!pedidoDoc.itens.every(it=> it.itemId && it.itemName)) throw new Error('itens da planilha em formato inválido');
+
+    await state.db.doc('pedidos/'+id).set(pedidoDoc);
+    toast(jaExistia ? 'Pedido atualizado a partir da planilha importada.' : 'Pedido importado com sucesso.', 'success');
+  }catch(e){ console.error(e); toast('Erro ao importar pedido: '+e.message, 'error'); }
+  finally{ ev.target.value = ''; }
+});
+
+/* ========================================================================
+   POSIÇÃO tab filters + export
+   ======================================================================== */
+['posicao-busca','posicao-filtro-setor','posicao-filtro-fornecedor','posicao-filtro-status'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderPosicaoTab);
+  document.getElementById(id).addEventListener('change', renderPosicaoTab);
+});
+
+document.getElementById('posicao-imprimir').addEventListener('click', ()=>{
+  const items = sortedActiveItems().sort((a,b)=>{
+    const order={critical:0,warn:1,ok:2};
+    const so = order[itemStatus(a)]-order[itemStatus(b)];
+    return so!==0?so:a.nome.localeCompare(b.nome,'pt-BR');
+  });
+  let html = `<div class="print-header"><h2>Posição de Estoque — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}</div></div>`;
+  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Fornecedor</th><th>Estoque</th><th>Mínimo</th><th>Status</th></tr></thead><tbody>`;
+  items.forEach(i=>{
+    html += `<tr><td>${esc(i.nome)}</td><td>${esc((i.setores||[]).join(', ')||'—')}</td><td>${esc((i.fornecedores||[]).join(', ')||'—')}</td><td>${Number(i.qty||0)} ${esc(i.unidade||'')}</td><td>${Number(i.minQty||0)}</td><td>${statusLabel(itemStatus(i))}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(()=> window.print(), 80);
+});
+
+document.getElementById('posicao-baixar-csv').addEventListener('click', async ()=>{
+  const items = sortedActiveItems();
+  const rows = [['Insumo','Setor','Fornecedor','Estoque Atual','Unidade','Estoque Minimo','Status','Atualizado em']];
+  items.forEach(i=> rows.push([i.nome, (i.setores||[]).join('; '), (i.fornecedores||[]).join('; '), Number(i.qty||0), i.unidade||'un', Number(i.minQty||0), statusLabel(itemStatus(i)), i.updatedAt||'']));
+  await downloadCsv(rows, 'posicao_estoque_kadan.csv');
+});
+
+/* ========================================================================
+   CONSUMO tab filters + export
+   ======================================================================== */
+(function initConsumoDates(){
+  const fim = todayISO();
+  const inicio = isoFromDate(new Date(Date.now() - 29*86400000));
+  document.getElementById('consumo-data-fim').value = fim;
+  document.getElementById('consumo-data-inicio').value = inicio;
+})();
+
+['consumo-data-inicio','consumo-data-fim','consumo-busca','consumo-filtro-setor','consumo-filtro-fornecedor'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderConsumoTab);
+  document.getElementById(id).addEventListener('change', renderConsumoTab);
+});
+
+document.getElementById('consumo-periodo-rapido').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const dias = Number(btn.getAttribute('data-dias'))||30;
+  const fim = todayISO();
+  const inicio = isoFromDate(new Date(Date.now() - (dias-1)*86400000));
+  document.getElementById('consumo-data-fim').value = fim;
+  document.getElementById('consumo-data-inicio').value = inicio;
+  renderConsumoTab();
+});
+
+document.getElementById('consumo-imprimir').addEventListener('click', ()=>{
+  const {dataInicio, dataFim, rows} = computeConsumo();
+  let html = `<div class="print-header"><h2>Consumo de Insumos — Kadan Sushi Bar (Salvador)</h2>
+    <div class="meta">Período: ${fmtDateBR(dataInicio)} a ${fmtDateBR(dataFim)}<br>Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}</div></div>`;
+  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Fornecedor</th><th>Estoque Atual</th><th>Entradas</th><th>Saídas</th><th>Saldo período</th><th>Consumo méd./dia</th><th>Dias de estoque</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const i = r.item;
+    html += `<tr><td>${esc(i.nome)}</td><td>${esc((i.setores||[]).join(', ')||'—')}</td><td>${esc((i.fornecedores||[]).join(', ')||'—')}</td><td>${fmtNum(i.qty)} ${esc(i.unidade||'')}</td><td>+${fmtNum(r.entradas)}</td><td>-${fmtNum(r.saidas)}</td><td>${r.saldo>=0?'+':''}${fmtNum(r.saldo)}</td><td>${fmtNum(r.mediaDia)}</td><td>${r.diasEstoque==null?'—':fmtNum(r.diasEstoque)}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(()=> window.print(), 80);
+});
+
+document.getElementById('consumo-baixar-csv').addEventListener('click', async ()=>{
+  const {rows} = computeConsumo();
+  const csvRows = [['Insumo','Setor','Fornecedor','Estoque Atual','Unidade','Entradas','Saidas','Saldo Periodo','Consumo Medio Dia','Dias de Estoque']];
+  rows.forEach(r=>{
+    const i = r.item;
+    csvRows.push([i.nome, (i.setores||[]).join('; '), (i.fornecedores||[]).join('; '), Number(i.qty||0), i.unidade||'un', fmtNum(r.entradas), fmtNum(r.saidas), fmtNum(r.saldo), fmtNum(r.mediaDia), r.diasEstoque==null?'':fmtNum(r.diasEstoque)]);
+  });
+  await downloadCsv(csvRows, 'consumo_insumos_kadan.csv');
+});
+
+async function downloadCsv(rows, filename){
+  const csv = rows.map(r=> r.map(cell=>{
+    const s = String(cell==null?'':cell);
+    return /[",;\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(';')).join('\r\n');
+  if(state.downloads){
+    try{
+      await state.downloads.save({filename, data: '﻿'+csv});
+      toast('Arquivo gerado. Confirme o download.', 'success');
+      return;
+    }catch(e){ console.error(e); }
+  }
+  toast('Download não disponível neste momento.', 'error');
+}
+
+/* ========================================================================
+   INIT
+   ======================================================================== */
+initCapabilities();
+</script>
+</body>
+</html>
