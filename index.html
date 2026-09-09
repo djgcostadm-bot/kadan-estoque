@@ -344,7 +344,7 @@ td.editable-num input{text-align:right;}
     <p id="login-error" style="display:none;color:var(--critical);font-size:12.5px;margin:0 0 10px 0;"></p>
     <button class="btn btn-primary" id="btn-login-submit" style="width:100%;">Entrar</button>
     <p style="margin:12px 0 0 0;font-size:11px;color:var(--text-muted);">Todas as operações de estoque exigem usuário identificado e senha.</p>
-    <p style="margin:6px 0 0 0;font-size:10px;color:var(--text-muted);opacity:.6;">build 2026-09-09-04</p>
+    <p style="margin:6px 0 0 0;font-size:10px;color:var(--text-muted);opacity:.6;">build 2026-09-09-rtdb</p>
   </div>
 </div>
 
@@ -909,29 +909,30 @@ td.editable-num input{text-align:right;}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 /* ========================================================================
-   VERSÃO INDEPENDENTE (fora do Claude) — usa Firebase (Firestore) como banco
-   de dados no lugar da capacidade "db" do Claude. Isto permite hospedar este
-   arquivo em qualquer site (GitHub Pages, Netlify, etc.) e acessar de vários
-   computadores ao mesmo tempo, compartilhando os mesmos dados, sem precisar
-   abrir nada dentro do Claude.
+   VERSÃO INDEPENDENTE (fora do Claude) — usa o Firebase Realtime Database
+   como banco de dados no lugar da capacidade "db" do Claude. Isto permite
+   hospedar este arquivo em qualquer site (GitHub Pages, Netlify, etc.) e
+   acessar de vários computadores ao mesmo tempo, compartilhando os mesmos
+   dados, sem precisar abrir nada dentro do Claude.
 
    ANTES DE USAR: troque os valores abaixo pelos dados do SEU projeto Firebase
-   (veja o passo a passo que a Claude te enviou junto com este arquivo).
+   (veja o passo a passo que a Claude te enviou junto com este arquivo) —
+   incluindo databaseURL, que só existe depois de você criar o Realtime
+   Database no console do Firebase.
    ======================================================================== */
 const firebaseConfig = {
-
   apiKey: "AIzaSyDefsQ6B89vxdkDF-mTs_lRX3-ATvW8Dao",
   authDomain: "kadan-estoque.firebaseapp.com",
+  databaseURL: "https://kadan-estoque-default-rtdb.firebaseio.com/",
   projectId: "kadan-estoque",
   storageBucket: "kadan-estoque.firebasestorage.app",
   messagingSenderId: "79363461704",
-  appId: "1:79363461704:web:d44e3ff089fce5e1d2fe7d"
+  appId: "1:79363461704:web:d44e3ff089fce5e1d2fe7d",
 };
-
 
 /* ========================================================================
    KADAN ESTOQUE — app state & helpers
@@ -994,44 +995,96 @@ function allSetores(){
 }
 
 /* ========================================================================
-   CAPABILITY INIT (Firebase — substitui a capacidade "db" do Claude)
+   CAPABILITY INIT (Firebase Realtime Database — substitui a capacidade "db"
+   do Claude)
    ======================================================================== */
 
-// A capacidade "db" do Claude expõe .collection()/.doc()/.onSnapshot()/.get()/
-// .set()/.acquire() — o SDK "compat" do Firestore usa exatamente a mesma forma
-// de chamar .collection()/.doc()/.onSnapshot()/.get()/.set(), então o resto do
-// app (mais de 2000 linhas) não precisou mudar. Só faltava .acquire() (uma
-// trava opcional e best-effort contra edições simultâneas), que não existe no
-// Firestore — por isso criamos aqui uma versão que não faz nada (sempre
-// "consegue a trava"), preservando o comportamento best-effort original.
-function installAcquireShim(){
-  if(firebase.firestore.DocumentReference.prototype.acquire) return;
-  firebase.firestore.DocumentReference.prototype.acquire = async function(){ return {acquired:true}; };
+// O resto do app (mais de 2000 linhas) foi escrito contra a API do capability
+// "db" do Claude: db.collection(path)/.doc(path) com .onSnapshot()/.get()/
+// .set()/.acquire(). O Realtime Database tem uma API bem diferente (ref(),
+// .on('value'), .once('value'), snapshot.val()), então em vez de reescrever
+// cada chamada nas mais de 2000 linhas do app, criamos aqui uma "camada de
+// tradução" que expõe exatamente a mesma forma de chamar (.collection/.doc/
+// .onSnapshot/.get/.set/.acquire) só que por baixo usa o Realtime Database.
+// Trocamos do Firestore para o Realtime Database porque o Firestore, neste
+// ambiente específico, dava erro de conexão ("client is offline") mesmo com
+// tudo configurado certo — o Realtime Database usa um protocolo de conexão
+// mais simples e mais tolerante a redes/antivírus/proxies difíceis.
+
+function rtdbDocShim(ref){
+  return {
+    async get(){
+      const snap = await ref.once('value');
+      const val = snap.val();
+      return {
+        exists: val !== null && val !== undefined,
+        data(){ return val; },
+        id: ref.key,
+      };
+    },
+    async set(data){ return ref.set(data); },
+    async update(data){ return ref.update(data); },
+    // O Claude expõe .acquire() (trava opcional e best-effort contra edições
+    // simultâneas). O Realtime Database não tem equivalente direto — como o
+    // uso no app já é só "melhor esforço" (o resultado é ignorado em caso de
+    // falha), aqui simplesmente não fazemos nada e dizemos que "conseguiu".
+    async acquire(){ return {acquired:true}; },
+  };
 }
 
-// Alguns navegadores/redes reportam ".get()" como "client is offline" mesmo com
-// a conexão funcionando (é um problema conhecido do SDK do Firestore, geralmente
-// passageiro). Isso faz o app tentar de novo automaticamente antes de mostrar
-// erro ao usuário, em vez de falhar na primeira tentativa.
-function installGetRetryShim(){
-  ['DocumentReference','Query'].forEach(function(clsName){
-    const cls = firebase.firestore[clsName];
-    const proto = cls && cls.prototype;
-    if(!proto || proto.__getRetryInstalled) return;
-    const originalGet = proto.get;
-    proto.get = function(...args){
-      const self = this;
-      const attempt = (n)=> originalGet.apply(self, args).catch(err=>{
-        const isOfflineLike = err && (err.code === 'unavailable' || /client is offline/i.test(err.message||''));
-        if(isOfflineLike && n < 3){
-          return new Promise(resolve=> setTimeout(resolve, 700*(n+1))).then(()=> attempt(n+1));
-        }
-        throw err;
-      });
-      return attempt(0);
-    };
-    proto.__getRetryInstalled = true;
-  });
+function rtdbQuerySnapshot(val){
+  const entries = val ? Object.entries(val) : [];
+  return { docs: entries.map(([id, data])=> ({ id, data(){ return data; } })) };
+}
+
+function rtdbCollectionShim(ref, opts){
+  opts = opts || {};
+  function buildQuery(){
+    let q = opts.orderField ? ref.orderByChild(opts.orderField) : ref;
+    if(opts.limitN){
+      q = (opts.orderDir === 'desc') ? q.limitToLast(opts.limitN) : q.limitToFirst(opts.limitN);
+    }
+    return q;
+  }
+  return {
+    limit(n){ return rtdbCollectionShim(ref, Object.assign({}, opts, {limitN:n})); },
+    orderBy(field, dir){ return rtdbCollectionShim(ref, Object.assign({}, opts, {orderField:field, orderDir: dir||'asc'})); },
+    async get(){
+      const snap = await buildQuery().once('value');
+      return rtdbQuerySnapshot(snap.val());
+    },
+    onSnapshot(cb, errCb){
+      const q = buildQuery();
+      const handler = (snap)=> cb(rtdbQuerySnapshot(snap.val()));
+      q.on('value', handler, errCb);
+      return ()=> q.off('value', handler);
+    },
+  };
+}
+
+// Camada fina de resiliência: se uma leitura falhar por um erro que parece
+// passageiro (rede instável), tenta de novo automaticamente algumas vezes
+// antes de mostrar erro ao usuário.
+async function withRetry(fn, tries){
+  tries = tries || 3;
+  let lastErr;
+  for(let i=0;i<tries;i++){
+    try{ return await fn(); }
+    catch(e){ lastErr = e; if(i < tries-1) await new Promise(r=> setTimeout(r, 600*(i+1))); }
+  }
+  throw lastErr;
+}
+
+function makeDbShim(realDb){
+  return {
+    collection(path){ return rtdbCollectionShim(realDb.ref(path)); },
+    doc(path){
+      const shim = rtdbDocShim(realDb.ref(path));
+      const originalGet = shim.get;
+      shim.get = ()=> withRetry(originalGet);
+      return shim;
+    },
+  };
 }
 
 // Substitui a capacidade "downloads" do Claude por um download comum do navegador.
@@ -1062,21 +1115,18 @@ async function initCapabilities(){
       showLoginError('Configuração do Firebase pendente: edite o objeto firebaseConfig no início do arquivo com os dados do seu projeto Firebase.');
       return;
     }
+    if(!firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('COLE_AQUI') === 0){
+      showNoDbState();
+      showLoginError('Configuração do Realtime Database pendente: edite firebaseConfig.databaseURL no início do arquivo (veja o passo a passo).');
+      return;
+    }
     firebase.initializeApp(firebaseConfig);
-    installAcquireShim();
-    installGetRetryShim();
-    const db = firebase.firestore();
-    // Em algumas redes/proxies/navegadores o modo de streaming padrão do Firestore
-    // não consegue manter a conexão aberta e todo pedido falha com "client is
-    // offline" mesmo com a configuração correta. Forçamos aqui o modo long-polling
-    // (mais compatível, um pouco menos eficiente) em vez de deixar o SDK detectar
-    // sozinho, porque a detecção automática não resolveu o problema neste caso.
-    db.settings({ experimentalForceLongPolling: true });
     // login anônimo no Firebase — necessário para que as regras de segurança do
-    // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
-    // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
-    // na coleção "users" do Firestore.
+    // Realtime Database possam exigir "usuário autenticado" sem depender de
+    // contas Google; o login de verdade (usuário/senha) continua sendo o do
+    // próprio app, guardado no nó "users" do banco.
     await firebase.auth().signInAnonymously();
+    const db = makeDbShim(firebase.database());
     state.db = db;
     state.downloads = { save: browserDownload };
     await initAuth(db);
