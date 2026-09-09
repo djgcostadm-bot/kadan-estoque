@@ -1008,6 +1008,31 @@ function installAcquireShim(){
   firebase.firestore.DocumentReference.prototype.acquire = async function(){ return {acquired:true}; };
 }
 
+// Alguns navegadores/redes reportam ".get()" como "client is offline" mesmo com
+// a conexão funcionando (é um problema conhecido do SDK do Firestore, geralmente
+// passageiro). Isso faz o app tentar de novo automaticamente antes de mostrar
+// erro ao usuário, em vez de falhar na primeira tentativa.
+function installGetRetryShim(){
+  ['DocumentReference','Query'].forEach(function(clsName){
+    const cls = firebase.firestore[clsName];
+    const proto = cls && cls.prototype;
+    if(!proto || proto.__getRetryInstalled) return;
+    const originalGet = proto.get;
+    proto.get = function(...args){
+      const self = this;
+      const attempt = (n)=> originalGet.apply(self, args).catch(err=>{
+        const isOfflineLike = err && (err.code === 'unavailable' || /client is offline/i.test(err.message||''));
+        if(isOfflineLike && n < 3){
+          return new Promise(resolve=> setTimeout(resolve, 700*(n+1))).then(()=> attempt(n+1));
+        }
+        throw err;
+      });
+      return attempt(0);
+    };
+    proto.__getRetryInstalled = true;
+  });
+}
+
 // Substitui a capacidade "downloads" do Claude por um download comum do navegador.
 async function browserDownload({filename, data}){
   let blob;
@@ -1038,13 +1063,14 @@ async function initCapabilities(){
     }
     firebase.initializeApp(firebaseConfig);
     installAcquireShim();
+    installGetRetryShim();
     const db = firebase.firestore();
     // Em algumas redes/proxies/navegadores o modo de streaming padrão do Firestore
     // não consegue manter a conexão aberta e todo pedido falha com "client is
-    // offline" mesmo com a configuração correta. Isso troca automaticamente para
-    // long-polling quando necessário — é a correção recomendada pelo próprio
-    // Firebase para esse sintoma, sem custo em redes onde o streaming já funciona.
-    db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+    // offline" mesmo com a configuração correta. Forçamos aqui o modo long-polling
+    // (mais compatível, um pouco menos eficiente) em vez de deixar o SDK detectar
+    // sozinho, porque a detecção automática não resolveu o problema neste caso.
+    db.settings({ experimentalForceLongPolling: true, merge: true });
     // login anônimo no Firebase — necessário para que as regras de segurança do
     // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
     // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
