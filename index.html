@@ -1044,7 +1044,7 @@ async function initCapabilities(){
     // offline" mesmo com a configuração correta. Isso troca automaticamente para
     // long-polling quando necessário — é a correção recomendada pelo próprio
     // Firebase para esse sintoma, sem custo em redes onde o streaming já funciona.
-    db.settings({ experimentalAutoDetectLongPolling: true });
+    db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
     // login anônimo no Firebase — necessário para que as regras de segurança do
     // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
     // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
