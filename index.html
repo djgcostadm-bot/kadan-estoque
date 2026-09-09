@@ -1038,12 +1038,18 @@ async function initCapabilities(){
     }
     firebase.initializeApp(firebaseConfig);
     installAcquireShim();
+    const db = firebase.firestore();
+    // Em algumas redes/proxies/navegadores o modo de streaming padrão do Firestore
+    // não consegue manter a conexão aberta e todo pedido falha com "client is
+    // offline" mesmo com a configuração correta. Isso troca automaticamente para
+    // long-polling quando necessário — é a correção recomendada pelo próprio
+    // Firebase para esse sintoma, sem custo em redes onde o streaming já funciona.
+    db.settings({ experimentalAutoDetectLongPolling: true });
     // login anônimo no Firebase — necessário para que as regras de segurança do
     // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
     // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
     // na coleção "users" do Firestore.
     await firebase.auth().signInAnonymously();
-    const db = firebase.firestore();
     state.db = db;
     state.downloads = { save: browserDownload };
     await initAuth(db);
