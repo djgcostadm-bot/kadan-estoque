@@ -562,8 +562,11 @@ td.editable-num input{text-align:right;}
               <h2>📋 Catálogo de Insumos</h2>
               <p>Cadastro dos itens, fornecedor, setor e estoque mínimo. Clique nos valores para editar.</p>
             </div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <input type="text" id="itens-busca" placeholder="Buscar item…" style="width:200px;">
+              <button class="btn" id="btn-exportar-catalogo">⬇️ Exportar catálogo</button>
+              <button class="btn" id="btn-importar-catalogo">⬆️ Importar catálogo</button>
+              <input type="file" id="input-importar-catalogo" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
               <button class="btn btn-primary" id="btn-novo-item">+ Novo item</button>
             </div>
           </div>
@@ -927,7 +930,7 @@ td.editable-num input{text-align:right;}
 const firebaseConfig = {
   apiKey: "AIzaSyDefsQ6B89vxdkDF-mTs_lRX3-ATvW8Dao",
   authDomain: "kadan-estoque.firebaseapp.com",
-  databaseURL: "https://kadan-estoque-default-rtdb.firebaseio.com/",
+  databaseURL: "COLE_AQUI_SUA_databaseURL",
   projectId: "kadan-estoque",
   storageBucket: "kadan-estoque.firebasestorage.app",
   messagingSenderId: "79363461704",
@@ -2730,6 +2733,126 @@ document.getElementById('input-importar-pedido').addEventListener('change', asyn
     await state.db.doc('pedidos/'+id).set(pedidoDoc);
     toast(jaExistia ? 'Pedido atualizado a partir da planilha importada.' : 'Pedido importado com sucesso.', 'success');
   }catch(e){ console.error(e); toast('Erro ao importar pedido: '+e.message, 'error'); }
+  finally{ ev.target.value = ''; }
+});
+
+/* ---- exportar / importar catálogo de itens (cadastro) em Excel (.xlsx) — para levar entre máquinas com bancos separados ---- */
+const ITEM_XLSX_HEADERS = ['ID','Insumo','Unidade','Setor(es)','Fornecedor(es)','Dias de Compra','Dias de Entrega','Estoque Mínimo','Estoque Atual','Observações','Ativo'];
+
+async function exportCatalogo(){
+  if(typeof XLSX === 'undefined'){ toast('Biblioteca de planilha ainda carregando, tente novamente em instantes.', 'error'); return; }
+  const items = Object.keys(state.stock).map(id=> Object.assign({id}, state.stock[id])).sort((a,b)=> (a.nome||'').localeCompare(b.nome||'','pt-BR'));
+  if(items.length===0){ toast('Nenhum item cadastrado para exportar.', 'error'); return; }
+
+  const rows = [ITEM_XLSX_HEADERS];
+  items.forEach(i=>{
+    rows.push([
+      i.id, i.nome||'', i.unidade||'un', (i.setores||[]).join(', '), (i.fornecedores||[]).join(', '),
+      (i.diasCompra||[]).join(', '), (i.diasEntrega||[]).join(', '), Number(i.minQty||0), Number(i.qty||0),
+      i.observacoes||'', i.ativo===false ? 'Não' : 'Sim',
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:26},{wch:9},{wch:16},{wch:20},{wch:16},{wch:16},{wch:12},{wch:12},{wch:24},{wch:7}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Catálogo');
+  const arrayBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+
+  const filename = `catalogo_insumos_kadan_${todayISO()}.xlsx`;
+  if(state.downloads){
+    try{
+      await state.downloads.save({filename, data: arrayBuf});
+      toast('Catálogo exportado. Confirme o download.', 'success');
+      return;
+    }catch(e){ console.error(e); }
+  }
+  toast('Download não disponível neste momento.', 'error');
+}
+
+document.getElementById('btn-exportar-catalogo').addEventListener('click', exportCatalogo);
+
+document.getElementById('btn-importar-catalogo').addEventListener('click', ()=>{
+  if(!state.db || !state.currentUser){ toast('Faça login para importar o catálogo.', 'error'); return; }
+  document.getElementById('input-importar-catalogo').click();
+});
+
+document.getElementById('input-importar-catalogo').addEventListener('change', async (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  try{
+    if(!state.db || !state.currentUser) throw new Error('faça login para continuar');
+    if(typeof XLSX === 'undefined') throw new Error('biblioteca de planilha ainda carregando, tente novamente em instantes');
+
+    const buf = await file.arrayBuffer();
+    let wb;
+    try{ wb = XLSX.read(buf, {type:'array'}); }
+    catch(e){ throw new Error('não foi possível ler o arquivo Excel'); }
+    const sheetName = wb.SheetNames[0];
+    if(!sheetName) throw new Error('a planilha está vazia');
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:''});
+    if(rows.length < 2) throw new Error('a planilha não contém itens');
+
+    const header = rows[0].map(h=> String(h||'').trim().toLowerCase());
+    const col = (...names)=>{ for(const n of names){ const i = header.indexOf(n); if(i!==-1) return i; } return -1; };
+    const idxId = col('id');
+    const idxNome = col('insumo','nome');
+    const idxUnidade = col('unidade');
+    const idxSetores = col('setor(es)','setores','setor');
+    const idxFornecedores = col('fornecedor(es)','fornecedores','fornecedor');
+    const idxDiasCompra = col('dias de compra');
+    const idxDiasEntrega = col('dias de entrega');
+    const idxMin = col('estoque mínimo','estoque minimo','minimo');
+    const idxQty = col('estoque atual','estoque');
+    const idxObs = col('observações','observacoes');
+    const idxAtivo = col('ativo');
+    if(idxNome===-1){
+      throw new Error('coluna "Insumo" não encontrada — use a planilha exportada por este sistema');
+    }
+
+    const dataRows = rows.slice(1).filter(r=> r[idxNome] !== '' && r[idxNome] != null && String(r[idxNome]).trim() !== '');
+    if(dataRows.length===0) throw new Error('nenhum item encontrado na planilha');
+
+    const usedIds = new Set(Object.keys(state.stock));
+    let okCount = 0, failCount = 0;
+    for(const r of dataRows){
+      try{
+        const nome = String(r[idxNome]||'').trim();
+        if(!nome){ failCount++; continue; }
+        let id = (idxId!==-1 && r[idxId]) ? String(r[idxId]).trim() : '';
+        if(!id){
+          id = slugify(nome);
+          if(!id) id = uid();
+          while(usedIds.has(id)) id = id + '-' + uid().slice(-4);
+        }
+        usedIds.add(id);
+        const existing = state.stock[id] || {};
+        let ativoVal;
+        if(idxAtivo!==-1){
+          const raw = String(r[idxAtivo]||'').trim().toLowerCase();
+          ativoVal = !(raw==='não' || raw==='nao' || raw==='false' || raw==='0');
+        }else{
+          ativoVal = existing.ativo === false ? false : true;
+        }
+        const body = Object.assign({}, existing, {
+          nome,
+          unidade: (idxUnidade!==-1 && r[idxUnidade]) ? String(r[idxUnidade]).trim() : (existing.unidade || 'un'),
+          setores: idxSetores!==-1 ? splitList(String(r[idxSetores]||'')) : (existing.setores||[]),
+          fornecedores: idxFornecedores!==-1 ? splitList(String(r[idxFornecedores]||'')) : (existing.fornecedores||[]),
+          diasCompra: idxDiasCompra!==-1 ? splitList(String(r[idxDiasCompra]||'')) : (existing.diasCompra||[]),
+          diasEntrega: idxDiasEntrega!==-1 ? splitList(String(r[idxDiasEntrega]||'')) : (existing.diasEntrega||[]),
+          minQty: idxMin!==-1 ? Number(r[idxMin]||0) : Number(existing.minQty||0),
+          qty: idxQty!==-1 ? Number(r[idxQty]||0) : Number(existing.qty||0),
+          observacoes: idxObs!==-1 ? String(r[idxObs]||'').trim() : (existing.observacoes||''),
+          ativo: ativoVal,
+          updatedAt: new Date().toISOString(),
+          createdAt: existing.createdAt || new Date().toISOString(),
+        });
+        await state.db.doc('stock/'+id).set(body);
+        okCount++;
+      }catch(e){ console.error(e); failCount++; }
+    }
+    toast(`Catálogo importado: ${okCount} item(ns) salvo(s)` + (failCount ? `, ${failCount} com erro` : '') + '.', failCount ? 'error' : 'success');
+  }catch(e){ console.error(e); toast('Erro ao importar catálogo: '+e.message, 'error'); }
   finally{ ev.target.value = ''; }
 });
 
