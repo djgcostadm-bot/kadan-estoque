@@ -344,6 +344,7 @@ td.editable-num input{text-align:right;}
     <p id="login-error" style="display:none;color:var(--critical);font-size:12.5px;margin:0 0 10px 0;"></p>
     <button class="btn btn-primary" id="btn-login-submit" style="width:100%;">Entrar</button>
     <p style="margin:12px 0 0 0;font-size:11px;color:var(--text-muted);">Todas as operações de estoque exigem usuário identificado e senha.</p>
+    <p style="margin:6px 0 0 0;font-size:10px;color:var(--text-muted);opacity:.6;">build 2026-09-09-04</p>
   </div>
 </div>
 
@@ -1070,7 +1071,7 @@ async function initCapabilities(){
     // offline" mesmo com a configuração correta. Forçamos aqui o modo long-polling
     // (mais compatível, um pouco menos eficiente) em vez de deixar o SDK detectar
     // sozinho, porque a detecção automática não resolveu o problema neste caso.
-    db.settings({ experimentalForceLongPolling: true, merge: true });
+    db.settings({ experimentalForceLongPolling: true });
     // login anônimo no Firebase — necessário para que as regras de segurança do
     // Firestore possam exigir "usuário autenticado" sem depender de contas Google;
     // o login de verdade (usuário/senha) continua sendo o do próprio app, guardado
