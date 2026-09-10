@@ -695,9 +695,10 @@ td.editable-num input{text-align:right;}
               <thead><tr>
                 <th>Insumo</th><th>Setor</th><th>Fornecedor</th>
                 <th class="num">Estoque Atual</th><th class="num">Entradas</th><th class="num">Saídas</th>
+                <th class="num">Ajustes de Contagem</th><th class="num">Consumo no Período</th>
                 <th class="num">Saldo período</th><th class="num">Consumo méd./dia</th><th class="num">Dias de estoque</th>
               </tr></thead>
-              <tbody id="consumo-tbody"><tr><td colspan="9" class="loading-row">Carregando…</td></tr></tbody>
+              <tbody id="consumo-tbody"><tr><td colspan="11" class="loading-row">Carregando…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -889,6 +890,29 @@ td.editable-num input{text-align:right;}
     <div class="modal-foot">
       <button class="btn btn-danger no-print" id="btn-cancelar-pedido" style="display:none;margin-right:auto;">Cancelar pedido</button>
       <button class="btn" data-close-modal="modal-pedido-detalhe">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-pedido-editar" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3>Editar pedido de compra</h3><button class="icon-btn" data-close-modal="modal-pedido-editar">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">Fornecedor</label>
+        <input type="text" id="edit-pedido-fornecedor" placeholder="Fornecedor">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th></th></tr></thead>
+          <tbody id="edit-pedido-itens"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-sm" id="btn-edit-pedido-add-item" style="margin-top:10px;">+ Adicionar item</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-modal="modal-pedido-editar">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-pedido-editado">Salvar alterações</button>
     </div>
   </div>
 </div>
@@ -1751,10 +1775,11 @@ function computeConsumo(){
 
   const porItem = {};
   noPeriodo.forEach(e=>{
-    if(e.tipo!=='entrada' && e.tipo!=='requisicao') return; // ajustes de inventário não contam como consumo
-    if(!porItem[e.itemId]) porItem[e.itemId] = {entradas:0, saidas:0};
+    if(e.tipo!=='entrada' && e.tipo!=='requisicao' && e.tipo!=='ajuste') return;
+    if(!porItem[e.itemId]) porItem[e.itemId] = {entradas:0, saidas:0, ajustes:0};
     if(e.tipo==='entrada') porItem[e.itemId].entradas += Number(e.qty)||0;
-    else porItem[e.itemId].saidas += Number(e.qty)||0;
+    else if(e.tipo==='requisicao') porItem[e.itemId].saidas += Number(e.qty)||0;
+    else if(e.tipo==='ajuste') porItem[e.itemId].ajustes += Number(e.delta)||0;
   });
 
   const busca = (document.getElementById('consumo-busca').value||'').toLowerCase();
@@ -1769,11 +1794,16 @@ function computeConsumo(){
   });
 
   const rows = items.map(i=>{
-    const mov = porItem[i.id] || {entradas:0, saidas:0};
+    const mov = porItem[i.id] || {entradas:0, saidas:0, ajustes:0};
     const saldo = mov.entradas - mov.saidas;
+    // Consumo real no período: saídas formais (requisições) menos o efeito líquido
+    // dos ajustes de contagem — um ajuste negativo (contagem encontrou menos do
+    // que o esperado) soma ao consumo real (perda não requisitada formalmente);
+    // um ajuste positivo (sobra na contagem) reduz o consumo real reportado.
+    const consumoPeriodo = mov.saidas - mov.ajustes;
     const mediaDia = mov.saidas / diasNoPeriodo;
     const diasEstoque = mediaDia > 0 ? (Number(i.qty||0) / mediaDia) : null;
-    return {item:i, entradas:mov.entradas, saidas:mov.saidas, saldo, mediaDia, diasEstoque};
+    return {item:i, entradas:mov.entradas, saidas:mov.saidas, ajustes:mov.ajustes, consumoPeriodo, saldo, mediaDia, diasEstoque};
   }).sort((a,b)=> b.saidas - a.saidas || a.item.nome.localeCompare(b.item.nome,'pt-BR'));
 
   return {dataInicio, dataFim, diasNoPeriodo, rows};
@@ -1805,9 +1835,10 @@ function renderConsumoTab(){
   `;
 
   const tbody = document.getElementById('consumo-tbody');
-  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><span class="ic">📈</span>Nenhum item encontrado.</td></tr>`; return; }
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="11" class="empty-state"><span class="ic">📈</span>Nenhum item encontrado.</td></tr>`; return; }
   tbody.innerHTML = rows.map(r=>{
     const i = r.item;
+    const ajusteCor = r.ajustes>0 ? 'var(--ok);' : (r.ajustes<0 ? 'var(--critical);' : '');
     return `<tr>
       <td><b>${esc(i.nome)}</b></td>
       <td>${esc((i.setores||[]).join(', ')||'—')}</td>
@@ -1815,6 +1846,8 @@ function renderConsumoTab(){
       <td class="num">${fmtNum(i.qty)} ${esc(i.unidade||'')}</td>
       <td class="num" style="color:var(--ok);">+${fmtNum(r.entradas)}</td>
       <td class="num" style="color:var(--critical);">-${fmtNum(r.saidas)}</td>
+      <td class="num"${ajusteCor?` style="color:${ajusteCor}"`:''}>${r.ajustes===0 ? '—' : (r.ajustes>0?'+':'')+fmtNum(r.ajustes)}</td>
+      <td class="num">${fmtNum(r.consumoPeriodo)}</td>
       <td class="num">${r.saldo>=0?'+':''}${fmtNum(r.saldo)}</td>
       <td class="num">${fmtNum(r.mediaDia)}</td>
       <td class="num">${r.diasEstoque==null ? '—' : fmtNum(r.diasEstoque)}</td>
@@ -2495,6 +2528,7 @@ function renderPedidosTab(){
       <td>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm" data-exportar-pedido="${esc(p.id)}">⬇️ Exportar</button>
+          <button class="btn btn-sm" data-editar-pedido="${esc(p.id)}">✏️ Editar</button>
           <button class="btn btn-sm" data-ver-pedido="${esc(p.id)}">Ver</button>
         </div>
       </td>
@@ -2505,6 +2539,9 @@ function renderPedidosTab(){
   });
   tbody.querySelectorAll('[data-exportar-pedido]').forEach(btn=>{
     btn.addEventListener('click', ()=> exportPedido(btn.getAttribute('data-exportar-pedido')));
+  });
+  tbody.querySelectorAll('[data-editar-pedido]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openPedidoEditModal(btn.getAttribute('data-editar-pedido')));
   });
 }
 
@@ -2541,6 +2578,114 @@ document.getElementById('btn-cancelar-pedido').addEventListener('click', async (
     toast('Pedido cancelado.', 'success');
     closeModal('modal-pedido-detalhe');
   }catch(e){ console.error(e); toast('Erro ao cancelar pedido: '+e.message, 'error'); }
+});
+
+/* ---- editar pedido salvo (fornecedor, quantidades, itens) ---- */
+let editPedidoId = null;
+
+function editPedidoExistingRowHtml(it){
+  return `<tr data-item-id="${esc(it.itemId)}" data-item-name="${esc(it.itemName)}" data-unidade="${esc(it.unidade||'un')}">
+    <td>${esc(it.itemName)}</td>
+    <td>${esc(it.unidade||'un')}</td>
+    <td class="num"><input type="number" class="edit-pedido-qtd-pedida" min="0" step="0.01" value="${Number(it.qtdPedida||0)}" style="width:90px;"></td>
+    <td class="num"><input type="number" class="edit-pedido-qtd-recebida" min="0" step="0.01" value="${Number(it.qtdRecebida||0)}" style="width:90px;"></td>
+    <td><button type="button" class="btn btn-sm edit-pedido-remove-item" title="Remover item">✕</button></td>
+  </tr>`;
+}
+
+function editPedidoNewRowHtml(){
+  return `<tr data-novo="1">
+    <td><select class="edit-pedido-novo-select" style="width:100%;">${'<option value="">Selecione um insumo…</option>' + itemOptionsHtml()}</select></td>
+    <td class="edit-pedido-novo-unidade">—</td>
+    <td class="num"><input type="number" class="edit-pedido-qtd-pedida" min="0" step="0.01" placeholder="Qtd" style="width:90px;"></td>
+    <td class="num"><input type="number" class="edit-pedido-qtd-recebida" min="0" step="0.01" value="0" style="width:90px;"></td>
+    <td><button type="button" class="btn btn-sm edit-pedido-remove-item" title="Remover item">✕</button></td>
+  </tr>`;
+}
+
+function wireEditPedidoRow(tr){
+  tr.querySelector('.edit-pedido-remove-item').addEventListener('click', ()=>{
+    const tbody = document.getElementById('edit-pedido-itens');
+    if(tbody.children.length > 1) tr.remove();
+    else toast('O pedido precisa ter ao menos um item.', 'error');
+  });
+  const sel = tr.querySelector('.edit-pedido-novo-select');
+  if(sel){
+    sel.addEventListener('change', ()=>{
+      const opt = sel.options[sel.selectedIndex];
+      tr.querySelector('.edit-pedido-novo-unidade').textContent = opt && opt.value ? (opt.getAttribute('data-unidade')||'—') : '—';
+    });
+  }
+}
+
+function openPedidoEditModal(id){
+  if(!state.currentUser){ toast('Faça login para editar pedidos.', 'error'); return; }
+  const pedido = state.pedidos[id];
+  if(!pedido){ toast('Pedido não encontrado.', 'error'); return; }
+  editPedidoId = id;
+  document.getElementById('edit-pedido-fornecedor').value = pedido.fornecedor || '';
+  const tbody = document.getElementById('edit-pedido-itens');
+  tbody.innerHTML = (pedido.itens||[]).map(editPedidoExistingRowHtml).join('');
+  tbody.querySelectorAll('tr').forEach(wireEditPedidoRow);
+  document.getElementById('modal-pedido-editar').style.display = 'flex';
+}
+
+document.getElementById('btn-edit-pedido-add-item').addEventListener('click', ()=>{
+  const tbody = document.getElementById('edit-pedido-itens');
+  const wrapper = document.createElement('tbody');
+  wrapper.innerHTML = editPedidoNewRowHtml();
+  const tr = wrapper.firstElementChild;
+  tbody.appendChild(tr);
+  wireEditPedidoRow(tr);
+});
+
+document.getElementById('btn-salvar-pedido-editado').addEventListener('click', async ()=>{
+  if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const id = editPedidoId;
+  const pedido = state.pedidos[id];
+  if(!id || !pedido) return;
+  const fornecedor = document.getElementById('edit-pedido-fornecedor').value.trim() || 'Sem fornecedor';
+
+  const rows = [...document.getElementById('edit-pedido-itens').querySelectorAll('tr')];
+  const itensMap = {};
+  let erro = '';
+  rows.forEach(tr=>{
+    let itemId, itemName, unidade;
+    if(tr.hasAttribute('data-novo')){
+      const sel = tr.querySelector('.edit-pedido-novo-select');
+      itemId = sel.value;
+      if(!itemId) return; // linha nova ainda vazia, ignora
+      const item = state.stock[itemId];
+      itemName = item ? item.nome : itemId;
+      unidade = item ? (item.unidade||'un') : 'un';
+    } else {
+      itemId = tr.getAttribute('data-item-id');
+      itemName = tr.getAttribute('data-item-name');
+      unidade = tr.getAttribute('data-unidade');
+    }
+    const qtdPedida = Number(tr.querySelector('.edit-pedido-qtd-pedida').value || 0);
+    const qtdRecebida = Number(tr.querySelector('.edit-pedido-qtd-recebida').value || 0);
+    if(qtdPedida <= 0){ erro = 'Informe uma quantidade pedida válida para cada item.'; return; }
+    if(itensMap[itemId]){
+      itensMap[itemId].qtdPedida += qtdPedida;
+      itensMap[itemId].qtdRecebida += qtdRecebida;
+    } else {
+      itensMap[itemId] = {itemId, itemName, unidade, qtdPedida, qtdRecebida};
+    }
+  });
+  const itens = Object.values(itensMap);
+  if(erro){ toast(erro, 'error'); return; }
+  if(itens.length===0){ toast('Adicione ao menos um item ao pedido.', 'error'); return; }
+
+  const allDone = itens.every(it=> Number(it.qtdRecebida||0) >= Number(it.qtdPedida||0) - 0.0001);
+  const anyReceived = itens.some(it=> Number(it.qtdRecebida||0) > 0);
+  const status = pedido.status==='cancelado' ? 'cancelado' : (allDone ? 'concluido' : (anyReceived ? 'parcial' : 'aberto'));
+
+  try{
+    await state.db.doc('pedidos/'+id).set(Object.assign({}, pedido, {fornecedor, itens, status}));
+    toast('Pedido atualizado com sucesso.', 'success');
+    closeModal('modal-pedido-editar');
+  }catch(e){ console.error(e); toast('Erro ao salvar pedido: '+e.message, 'error'); }
 });
 
 /* ---- vincular pedido salvo à Entrada de mercadoria (Estoque) ---- */
@@ -2919,10 +3064,10 @@ document.getElementById('consumo-imprimir').addEventListener('click', ()=>{
   const {dataInicio, dataFim, rows} = computeConsumo();
   let html = `<div class="print-header"><h2>Consumo de Insumos — Kadan Sushi Bar (Salvador)</h2>
     <div class="meta">Período: ${fmtDateBR(dataInicio)} a ${fmtDateBR(dataFim)}<br>Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(state.currentUser ? state.currentUser.nome : '—')}</div></div>`;
-  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Fornecedor</th><th>Estoque Atual</th><th>Entradas</th><th>Saídas</th><th>Saldo período</th><th>Consumo méd./dia</th><th>Dias de estoque</th></tr></thead><tbody>`;
+  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Fornecedor</th><th>Estoque Atual</th><th>Entradas</th><th>Saídas</th><th>Ajustes de Contagem</th><th>Consumo no Período</th><th>Saldo período</th><th>Consumo méd./dia</th><th>Dias de estoque</th></tr></thead><tbody>`;
   rows.forEach(r=>{
     const i = r.item;
-    html += `<tr><td>${esc(i.nome)}</td><td>${esc((i.setores||[]).join(', ')||'—')}</td><td>${esc((i.fornecedores||[]).join(', ')||'—')}</td><td>${fmtNum(i.qty)} ${esc(i.unidade||'')}</td><td>+${fmtNum(r.entradas)}</td><td>-${fmtNum(r.saidas)}</td><td>${r.saldo>=0?'+':''}${fmtNum(r.saldo)}</td><td>${fmtNum(r.mediaDia)}</td><td>${r.diasEstoque==null?'—':fmtNum(r.diasEstoque)}</td></tr>`;
+    html += `<tr><td>${esc(i.nome)}</td><td>${esc((i.setores||[]).join(', ')||'—')}</td><td>${esc((i.fornecedores||[]).join(', ')||'—')}</td><td>${fmtNum(i.qty)} ${esc(i.unidade||'')}</td><td>+${fmtNum(r.entradas)}</td><td>-${fmtNum(r.saidas)}</td><td>${r.ajustes===0?'—':(r.ajustes>0?'+':'')+fmtNum(r.ajustes)}</td><td>${fmtNum(r.consumoPeriodo)}</td><td>${r.saldo>=0?'+':''}${fmtNum(r.saldo)}</td><td>${fmtNum(r.mediaDia)}</td><td>${r.diasEstoque==null?'—':fmtNum(r.diasEstoque)}</td></tr>`;
   });
   html += `</tbody></table>`;
   document.getElementById('print-area').innerHTML = html;
@@ -2931,10 +3076,10 @@ document.getElementById('consumo-imprimir').addEventListener('click', ()=>{
 
 document.getElementById('consumo-baixar-csv').addEventListener('click', async ()=>{
   const {rows} = computeConsumo();
-  const csvRows = [['Insumo','Setor','Fornecedor','Estoque Atual','Unidade','Entradas','Saidas','Saldo Periodo','Consumo Medio Dia','Dias de Estoque']];
+  const csvRows = [['Insumo','Setor','Fornecedor','Estoque Atual','Unidade','Entradas','Saidas','Ajustes de Contagem','Consumo no Periodo','Saldo Periodo','Consumo Medio Dia','Dias de Estoque']];
   rows.forEach(r=>{
     const i = r.item;
-    csvRows.push([i.nome, (i.setores||[]).join('; '), (i.fornecedores||[]).join('; '), Number(i.qty||0), i.unidade||'un', fmtNum(r.entradas), fmtNum(r.saidas), fmtNum(r.saldo), fmtNum(r.mediaDia), r.diasEstoque==null?'':fmtNum(r.diasEstoque)]);
+    csvRows.push([i.nome, (i.setores||[]).join('; '), (i.fornecedores||[]).join('; '), Number(i.qty||0), i.unidade||'un', fmtNum(r.entradas), fmtNum(r.saidas), fmtNum(r.ajustes), fmtNum(r.consumoPeriodo), fmtNum(r.saldo), fmtNum(r.mediaDia), r.diasEstoque==null?'':fmtNum(r.diasEstoque)]);
   });
   await downloadCsv(csvRows, 'consumo_insumos_kadan.csv');
 });
