@@ -361,6 +361,8 @@ td.editable-num input{text-align:right;}
     <div class="nav-item active" data-tab="estoque"><span class="ic">📥</span>Estoque</div>
     <div class="nav-item" data-tab="itens"><span class="ic">📋</span>Itens / Catálogo</div>
     <div class="nav-item" data-tab="compras"><span class="ic">🛒</span>Compras</div>
+    <div class="nav-item" data-tab="comprador" id="nav-comprador" style="display:none;"><span class="ic">💰</span>Comprador</div>
+    <div class="nav-item" data-tab="auditoria" id="nav-auditoria" style="display:none;"><span class="ic">🔍</span>Auditoria</div>
     <div class="nav-item" data-tab="consumo"><span class="ic">📈</span>Consumo</div>
     <div class="nav-item" data-tab="posicao"><span class="ic">📊</span>Posição de Estoque</div>
     <div class="nav-sep"></div>
@@ -648,8 +650,96 @@ td.editable-num input{text-align:right;}
           <p style="margin:-6px 0 14px 0;font-size:11.5px;color:var(--text-muted);">Use exportar/importar (planilha Excel) para levar um pedido de uma máquina para outra quando elas não compartilham o mesmo banco de dados.</p>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Data</th><th>Fornecedor</th><th>Itens</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th>Status</th><th></th></tr></thead>
-              <tbody id="pedidos-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+              <thead><tr><th>Data</th><th>Fornecedor</th><th>Itens</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th>Status</th><th>Confirmação</th><th></th></tr></thead>
+              <tbody id="pedidos-tbody"><tr><td colspan="8" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== COMPRADOR ===================== -->
+      <section class="tab-panel" id="tab-comprador">
+        <div class="card" id="card-comprador-dashboard">
+          <div class="card-head">
+            <div>
+              <h2>📊 Dashboard do Comprador</h2>
+              <p>Valores do mês corrente, calculados a partir dos pedidos já confirmados.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="number" id="comprador-meta-input" min="0" step="0.01" placeholder="Meta do mês (R$)" style="width:160px;">
+              <button class="btn btn-sm" id="btn-salvar-meta-comprador">Salvar meta</button>
+            </div>
+          </div>
+          <div class="stat-row" id="comprador-dashboard-stats" style="margin-bottom:12px;"></div>
+          <div style="background:var(--surface-2);border-radius:8px;height:10px;overflow:hidden;">
+            <div id="comprador-meta-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s;"></div>
+          </div>
+          <p id="comprador-meta-progress-label" style="margin:6px 0 0 0;font-size:11.5px;color:var(--text-muted);"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>💰 Análise de Preços e Confirmação de Pedidos</h2>
+              <p>Compare os últimos preços de compra, ajuste quantidade e preço, e confirme o pedido.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="comprador-busca" placeholder="Buscar por fornecedor ou insumo…" style="width:240px;">
+            <div class="pill-toggle" id="comprador-filtro-confirmacao">
+              <button data-f="pendentes" class="active">Pendentes</button>
+              <button data-f="confirmados">Confirmados</button>
+              <button data-f="todos">Todos</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Fornecedor</th><th>Itens</th><th class="num">Qtd. Pedida</th><th>Status</th><th>Confirmação</th><th></th></tr></thead>
+              <tbody id="comprador-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>📜 Histórico de Compras</h2>
+              <p>Datas de compra, quantidades, preços e entregas de todos os pedidos já confirmados, por item.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:end;">
+            <div class="field"><label class="field-label">De</label><input type="date" id="historico-compras-data-inicio" style="width:150px;"></div>
+            <div class="field"><label class="field-label">Até</label><input type="date" id="historico-compras-data-fim" style="width:150px;"></div>
+            <input type="text" id="historico-compras-busca" placeholder="Buscar por insumo ou fornecedor…" style="width:220px;">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data da Compra</th><th>Fornecedor</th><th>Insumo</th><th class="num">Quantidade</th><th class="num">Preço</th><th class="num">Subtotal</th><th>Previsão de Entrega</th></tr></thead>
+              <tbody id="historico-compras-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== AUDITORIA DE COMPRAS ===================== -->
+      <section class="tab-panel" id="tab-auditoria">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>🔍 Auditoria de Compras</h2>
+              <p>Itens comprados com justificativa (variação de preço acima de 5% em relação à última compra), em um período.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:end;">
+            <div class="field"><label class="field-label">De</label><input type="date" id="auditoria-data-inicio" style="width:150px;"></div>
+            <div class="field"><label class="field-label">Até</label><input type="date" id="auditoria-data-fim" style="width:150px;"></div>
+            <input type="text" id="auditoria-busca" placeholder="Buscar por insumo ou fornecedor…" style="width:220px;">
+          </div>
+          <div class="stat-row" id="auditoria-stats" style="margin-bottom:14px;"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data da Compra</th><th>Fornecedor</th><th>Insumo</th><th class="num">Preço Anterior</th><th class="num">Preço de Compra</th><th class="num">Variação</th><th>Justificativa</th></tr></thead>
+              <tbody id="auditoria-tbody"><tr><td colspan="7" class="loading-row">Carregando…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -849,6 +939,7 @@ td.editable-num input{text-align:right;}
       </div>
       <p id="usuario-senha-hint" style="display:none;margin:0;font-size:11.5px;color:var(--text-muted);">Deixe em branco para manter a senha atual.</p>
       <label class="checkbox-row"><input type="checkbox" id="usuario-admin"> Administrador (pode gerenciar usuários)</label>
+      <label class="checkbox-row"><input type="checkbox" id="usuario-comprador"> Comprador (analisa preços e confirma pedidos)</label>
       <label class="checkbox-row" id="usuario-ativo-row" style="display:none;"><input type="checkbox" id="usuario-ativo"> Usuário ativo</label>
     </div>
     <div class="modal-foot">
@@ -882,10 +973,11 @@ td.editable-num input{text-align:right;}
       <p id="modal-pedido-sub" style="margin:0;font-size:12.5px;color:var(--text-muted);"></p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th class="num">Pendente</th></tr></thead>
+          <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Qtd. Pedida</th><th class="num">Qtd. Recebida</th><th class="num">Pendente</th><th class="num">Preço Unit.</th><th class="num">Subtotal</th></tr></thead>
           <tbody id="modal-pedido-itens"></tbody>
         </table>
       </div>
+      <p id="modal-pedido-total" style="margin:0;text-align:right;font-size:13.5px;display:none;"></p>
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger no-print" id="btn-cancelar-pedido" style="display:none;margin-right:auto;">Cancelar pedido</button>
@@ -913,6 +1005,30 @@ td.editable-num input{text-align:right;}
     <div class="modal-foot">
       <button class="btn" data-close-modal="modal-pedido-editar">Cancelar</button>
       <button class="btn btn-primary" id="btn-salvar-pedido-editado">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop no-print" id="modal-comprador-analise" style="display:none;">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head"><h3 id="comprador-analise-title">Analisar pedido</h3><button class="icon-btn" data-close-modal="modal-comprador-analise">✕</button></div>
+    <div class="modal-body">
+      <p id="comprador-analise-sub" style="margin:0;font-size:12.5px;color:var(--text-muted);"></p>
+      <div class="field">
+        <label class="field-label">Previsão de entrega</label>
+        <input type="date" id="comprador-data-entrega" style="width:180px;">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Qtd. Solicitada</th><th>Últimos preços</th><th class="num">Preço atual (R$)</th><th class="num">Subtotal</th><th>Justificativa</th></tr></thead>
+          <tbody id="comprador-analise-itens"></tbody>
+        </table>
+      </div>
+      <div style="text-align:right;font-size:14px;"><b>Total do pedido: <span id="comprador-analise-total">R$ 0,00</span></b></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close-modal="modal-comprador-analise">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirmar-pedido-comprador">Confirmar pedido</button>
     </div>
   </div>
 </div>
@@ -985,6 +1101,7 @@ function isoFromDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padSt
 function todayISO(){ return isoFromDate(new Date()); }
 function fmtDateBR(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 function fmtNum(n){ n = Number(n||0); if(Number.isInteger(n)) return String(n); return n.toFixed(2).replace(/0+$/,'').replace(/\.$/,''); }
+function fmtMoney(n){ return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function fmtDateTimeBR(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return iso; return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function slugify(s){ return (s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase(); }
 function splitList(s){ return (s||'').split(',').map(x=>x.trim()).filter(Boolean); }
@@ -1183,13 +1300,20 @@ function initDataListeners(db){
   // recent movements (last ~370 days, one doc per day)
   loadRecentMovements(db);
 
+  // meta mensal do comprador (Dashboard)
+  loadCompradorMeta();
+
   // live pedidos de compra
   state.unsubPedidos = db.collection('pedidos').onSnapshot(snap=>{
     const map = {};
     snap.docs.forEach(d=>{ map[d.id] = Object.assign({id:d.id}, d.data()); });
     state.pedidos = map;
     renderPedidosTab();
+    renderCompradorTab();
     renderEntradaPedidoResultados();
+    renderHistoricoComprasTab();
+    renderAuditoriaTab();
+    renderCompradorDashboard();
   }, err=>{ console.error('pedidos snapshot error', err); });
 }
 
@@ -1240,7 +1364,7 @@ function clearLoginError(){
   document.getElementById('login-error').style.display = 'none';
 }
 
-async function createUser({nome, usuario, senha, admin}){
+async function createUser({nome, usuario, senha, admin, comprador}){
   const db = state.db; if(!db) throw new Error('sem conexão com dados');
   const id = slugify(usuario);
   if(!id) throw new Error('Informe um login válido.');
@@ -1249,7 +1373,7 @@ async function createUser({nome, usuario, senha, admin}){
   const salt = randomHex(16);
   const senhaHash = await hashPassword(senha, salt);
   await db.doc('users/'+id).set({
-    nome, usuario: id, salt, senhaHash, admin: !!admin, ativo: true,
+    nome, usuario: id, salt, senhaHash, admin: !!admin, comprador: !!comprador, ativo: true,
     criadoEm: new Date().toISOString(), ultimoLogin: null,
   });
   return id;
@@ -1264,7 +1388,7 @@ async function attemptLogin(usuario, senha){
   const hash = await hashPassword(senha, u.salt);
   if(hash !== u.senhaHash) return {ok:false, msg:'Usuário ou senha inválidos.'};
   try{ await db.doc('users/'+id).set(Object.assign({}, u, {ultimoLogin: new Date().toISOString()})); }catch(e){}
-  return {ok:true, user:{id, nome:u.nome, admin: !!u.admin}};
+  return {ok:true, user:{id, nome:u.nome, admin: !!u.admin, comprador: !!u.comprador}};
 }
 
 function startApp(){
@@ -1272,6 +1396,8 @@ function startApp(){
   document.getElementById('app-shell').style.display = 'flex';
   document.getElementById('current-user-name').textContent = state.currentUser.nome;
   document.getElementById('nav-usuarios').style.display = state.currentUser.admin ? 'flex' : 'none';
+  document.getElementById('nav-comprador').style.display = (state.currentUser.admin || state.currentUser.comprador) ? 'flex' : 'none';
+  document.getElementById('nav-auditoria').style.display = (state.currentUser.admin || state.currentUser.comprador) ? 'flex' : 'none';
   if(!state.dataListenersStarted){
     state.dataListenersStarted = true;
     initDataListeners(state.db);
@@ -1367,7 +1493,7 @@ function renderUsuariosTab(){
     tbody.innerHTML = users.map(u=>`<tr data-id="${esc(u.id)}">
       <td><b>${esc(u.nome)}</b></td>
       <td>${esc(u.usuario||u.id)}</td>
-      <td><span class="tag ${u.admin?'warn':'neutral'}">${u.admin?'Administrador':'Operador'}</span></td>
+      <td>${[u.admin?'<span class="tag warn">Administrador</span>':'', u.comprador?'<span class="tag ok">Comprador</span>':'', (!u.admin && !u.comprador)?'<span class="tag neutral">Operador</span>':''].join(' ')}</td>
       <td><span class="tag ${u.ativo===false?'critical':'ok'}">${u.ativo===false?'Inativo':'Ativo'}</span></td>
       <td>${u.criadoEm?fmtDateTimeBR(u.criadoEm):'—'}</td>
       <td>${u.ultimoLogin?fmtDateTimeBR(u.ultimoLogin):'—'}</td>
@@ -1392,6 +1518,7 @@ function openUsuarioModal(id, userData){
   document.getElementById('usuario-senha-label').textContent = isNew ? 'Senha' : 'Nova senha';
   document.getElementById('usuario-senha-hint').style.display = isNew ? 'none' : 'block';
   document.getElementById('usuario-admin').checked = userData ? !!userData.admin : false;
+  document.getElementById('usuario-comprador').checked = userData ? !!userData.comprador : false;
   document.getElementById('usuario-ativo-row').style.display = isNew ? 'none' : 'flex';
   document.getElementById('usuario-ativo').checked = userData ? userData.ativo !== false : true;
   document.getElementById('modal-usuario').style.display = 'flex';
@@ -1407,6 +1534,7 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
   const senha = document.getElementById('usuario-senha').value;
   const senhaConfirma = document.getElementById('usuario-senha-confirma').value;
   const admin = document.getElementById('usuario-admin').checked;
+  const comprador = document.getElementById('usuario-comprador').checked;
   if(!nome){ toast('Informe o nome do usuário.', 'error'); return; }
   if(isNew && !login){ toast('Informe o login do usuário.', 'error'); return; }
   if(senha && senha !== senhaConfirma){ toast('As senhas não coincidem.', 'error'); return; }
@@ -1414,7 +1542,7 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
   if(senha && senha.length < 4){ toast('A senha deve ter ao menos 4 caracteres.', 'error'); return; }
   try{
     if(isNew){
-      await createUser({nome, usuario: login, senha, admin});
+      await createUser({nome, usuario: login, senha, admin, comprador});
       toast('Usuário criado.', 'success');
     } else {
       const ref = state.db.doc('users/'+id);
@@ -1423,7 +1551,7 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
       const ativo = document.getElementById('usuario-ativo').checked;
       if(id === state.currentUser.id && !ativo){ toast('Você não pode desativar seu próprio usuário.', 'error'); return; }
       if(id === state.currentUser.id && !admin && !(await askConfirm('Você está removendo seu próprio acesso de administrador. Deseja continuar?'))) return;
-      const body = Object.assign({}, cur, {nome, admin, ativo});
+      const body = Object.assign({}, cur, {nome, admin, comprador, ativo});
       if(senha){
         const novoSalt = randomHex(16);
         body.salt = novoSalt;
@@ -1431,9 +1559,11 @@ document.getElementById('btn-salvar-usuario').addEventListener('click', async ()
       }
       await ref.set(body);
       if(id === state.currentUser.id){
-        state.currentUser.nome = nome; state.currentUser.admin = admin;
+        state.currentUser.nome = nome; state.currentUser.admin = admin; state.currentUser.comprador = comprador;
         document.getElementById('current-user-name').textContent = nome;
         document.getElementById('nav-usuarios').style.display = admin ? 'flex' : 'none';
+        document.getElementById('nav-comprador').style.display = (admin || comprador) ? 'flex' : 'none';
+        document.getElementById('nav-auditoria').style.display = (admin || comprador) ? 'flex' : 'none';
       }
       toast('Usuário atualizado.', 'success');
     }
@@ -1899,6 +2029,8 @@ const TAB_META = {
   estoque: {title:'Estoque', sub:'Lançamentos de entrada, requisição e ajuste de estoque'},
   itens: {title:'Itens / Catálogo', sub:'Cadastro de insumos, fornecedores e estoque mínimo'},
   compras: {title:'Compras', sub:'Relatório de compras por fornecedor'},
+  comprador: {title:'Comprador', sub:'Análise de preços e confirmação de pedidos'},
+  auditoria: {title:'Auditoria de Compras', sub:'Itens comprados com justificativa de variação de preço'},
   consumo: {title:'Consumo de Insumos', sub:'Análise de estoque, entradas e saídas por período'},
   posicao: {title:'Posição de Estoque', sub:'Relatório para enviar ao setor de Compras'},
   historico: {title:'Histórico', sub:'Todas as movimentações de estoque'},
@@ -1914,6 +2046,8 @@ document.querySelectorAll('.nav-item').forEach(nav=>{
     document.getElementById('topbar-heading').textContent = TAB_META[tab].title;
     document.getElementById('topbar-sub').textContent = TAB_META[tab].sub;
     if(tab === 'usuarios') renderUsuariosTab();
+    if(tab === 'comprador'){ renderCompradorDashboard(); renderHistoricoComprasTab(); }
+    if(tab === 'auditoria') renderAuditoriaTab();
   });
 });
 
@@ -2514,10 +2648,11 @@ function renderPedidosTab(){
     }
     return true;
   });
-  if(pedidos.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">📑</span>Nenhum pedido encontrado.</td></tr>`; return; }
+  if(pedidos.length===0){ tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><span class="ic">📑</span>Nenhum pedido encontrado.</td></tr>`; return; }
   tbody.innerHTML = pedidos.map(p=>{
     const {pedida, recebida} = pedidoTotals(p);
     const info = pedidoStatusInfo(p.status);
+    const confirmInfo = pedidoConfirmInfo(p);
     return `<tr data-id="${esc(p.id)}">
       <td>${fmtDateTimeBR(p.criadoEm)}</td>
       <td><b>${esc(p.fornecedor||'—')}</b></td>
@@ -2525,6 +2660,7 @@ function renderPedidosTab(){
       <td class="num">${fmtNum(pedida)}</td>
       <td class="num">${fmtNum(recebida)}</td>
       <td><span class="tag ${info.tag}">${info.label}</span></td>
+      <td><span class="tag ${confirmInfo.tag}">${confirmInfo.label}</span></td>
       <td>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm" data-exportar-pedido="${esc(p.id)}">⬇️ Exportar</button>
@@ -2549,18 +2685,32 @@ function openPedidoModal(id){
   const pedido = state.pedidos[id];
   if(!pedido) return;
   const info = pedidoStatusInfo(pedido.status);
+  const confirmInfo = pedidoConfirmInfo(pedido);
   document.getElementById('modal-pedido-title').textContent = `Pedido — ${pedido.fornecedor||'—'}`;
-  document.getElementById('modal-pedido-sub').textContent = `Salvo em ${fmtDateTimeBR(pedido.criadoEm)} por ${pedido.criadoPor||'—'} · Status: ${info.label}`;
+  let sub = `Salvo em ${fmtDateTimeBR(pedido.criadoEm)} por ${pedido.criadoPor||'—'} · Status: ${info.label} · ${confirmInfo.label}`;
+  if(confirmInfo.confirmado && pedido.confirmadoPor) sub += ` por ${pedido.confirmadoPor}`;
+  if(pedido.dataEntregaPrevista) sub += ` · Previsão de entrega: ${fmtDateBR(pedido.dataEntregaPrevista)}`;
+  document.getElementById('modal-pedido-sub').textContent = sub;
+  let total = 0, temPreco = false;
   document.getElementById('modal-pedido-itens').innerHTML = (pedido.itens||[]).map(it=>{
     const pendente = Math.max(0, Number((Number(it.qtdPedida||0) - Number(it.qtdRecebida||0)).toFixed(4)));
+    const preco = Number(it.preco||0);
+    if(preco > 0) temPreco = true;
+    const subtotal = preco * Number(it.qtdPedida||0);
+    total += subtotal;
     return `<tr>
       <td>${esc(it.itemName)}</td>
       <td>${esc(it.unidade||'un')}</td>
       <td class="num">${fmtNum(it.qtdPedida)}</td>
       <td class="num">${fmtNum(it.qtdRecebida)}</td>
       <td class="num">${fmtNum(pendente)}</td>
+      <td class="num">${preco>0 ? fmtMoney(preco) : '—'}</td>
+      <td class="num">${preco>0 ? fmtMoney(subtotal) : '—'}</td>
     </tr>`;
   }).join('');
+  const totalEl = document.getElementById('modal-pedido-total');
+  if(temPreco){ totalEl.textContent = `Total do pedido: ${fmtMoney(total)}`; totalEl.style.display = 'block'; }
+  else { totalEl.style.display = 'none'; }
   const cancelBtn = document.getElementById('btn-cancelar-pedido');
   cancelBtn.style.display = (pedido.status==='aberto' || pedido.status==='parcial') ? 'inline-flex' : 'none';
   cancelBtn.setAttribute('data-pedido-id', id);
@@ -2622,6 +2772,7 @@ function openPedidoEditModal(id){
   if(!state.currentUser){ toast('Faça login para editar pedidos.', 'error'); return; }
   const pedido = state.pedidos[id];
   if(!pedido){ toast('Pedido não encontrado.', 'error'); return; }
+  if(pedido.confirmadoEm && !(state.currentUser.admin || state.currentUser.comprador)){ toast('Este pedido já foi confirmado pelo comprador — apenas o comprador pode editá-lo.', 'error'); return; }
   editPedidoId = id;
   document.getElementById('edit-pedido-fornecedor').value = pedido.fornecedor || '';
   const tbody = document.getElementById('edit-pedido-itens');
@@ -2666,11 +2817,16 @@ document.getElementById('btn-salvar-pedido-editado').addEventListener('click', a
     const qtdPedida = Number(tr.querySelector('.edit-pedido-qtd-pedida').value || 0);
     const qtdRecebida = Number(tr.querySelector('.edit-pedido-qtd-recebida').value || 0);
     if(qtdPedida <= 0){ erro = 'Informe uma quantidade pedida válida para cada item.'; return; }
+    // preserva o preço já lançado pelo comprador para este item (a edição de
+    // quantidade/fornecedor não deve apagar um preço já confirmado)
+    const origItem = (pedido.itens||[]).find(x=>x.itemId===itemId);
+    const preco = origItem ? Number(origItem.preco||0) : 0;
     if(itensMap[itemId]){
       itensMap[itemId].qtdPedida += qtdPedida;
       itensMap[itemId].qtdRecebida += qtdRecebida;
     } else {
       itensMap[itemId] = {itemId, itemName, unidade, qtdPedida, qtdRecebida};
+      if(preco > 0) itensMap[itemId].preco = preco;
     }
   });
   const itens = Object.values(itensMap);
@@ -2686,6 +2842,334 @@ document.getElementById('btn-salvar-pedido-editado').addEventListener('click', a
     toast('Pedido atualizado com sucesso.', 'success');
     closeModal('modal-pedido-editar');
   }catch(e){ console.error(e); toast('Erro ao salvar pedido: '+e.message, 'error'); }
+});
+
+/* ========================================================================
+   MÓDULO COMPRADOR — análise de preços e confirmação de pedidos
+   ======================================================================== */
+function pedidoConfirmInfo(pedido){
+  if(pedido.confirmadoEm) return {label: 'Confirmado em ' + fmtDateTimeBR(pedido.confirmadoEm), tag:'ok', confirmado:true};
+  return {label:'Pendente', tag:'warn', confirmado:false};
+}
+
+// Últimos preços pagos por este insumo, olhando os pedidos já confirmados
+// (o preço só é considerado "real" depois que o comprador confirma o pedido).
+function computeUltimosPrecos(itemId, excludePedidoId){
+  const historico = [];
+  Object.values(state.pedidos).forEach(p=>{
+    if(p.id === excludePedidoId) return;
+    if(!p.confirmadoEm) return;
+    (p.itens||[]).forEach(it=>{
+      if(it.itemId===itemId && Number(it.preco||0) > 0){
+        historico.push({preco:Number(it.preco), data:p.confirmadoEm, fornecedor:p.fornecedor||''});
+      }
+    });
+  });
+  historico.sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  return historico.slice(0,3);
+}
+
+let compradorFiltroConfirmacao = 'pendentes';
+document.getElementById('comprador-filtro-confirmacao').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  [...ev.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  compradorFiltroConfirmacao = btn.getAttribute('data-f');
+  renderCompradorTab();
+});
+document.getElementById('comprador-busca').addEventListener('input', renderCompradorTab);
+
+function renderCompradorTab(){
+  const tbody = document.getElementById('comprador-tbody');
+  if(!tbody) return;
+  const busca = (document.getElementById('comprador-busca').value||'').toLowerCase();
+  let pedidos = sortedPedidos().filter(p=> p.status !== 'cancelado');
+  if(compradorFiltroConfirmacao==='pendentes') pedidos = pedidos.filter(p=> !p.confirmadoEm);
+  else if(compradorFiltroConfirmacao==='confirmados') pedidos = pedidos.filter(p=> !!p.confirmadoEm);
+  if(busca){
+    pedidos = pedidos.filter(p=>{
+      const matchesFornecedor = (p.fornecedor||'').toLowerCase().includes(busca);
+      const matchesItem = (p.itens||[]).some(it=> it.itemName.toLowerCase().includes(busca));
+      return matchesFornecedor || matchesItem;
+    });
+  }
+  if(pedidos.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">💰</span>Nenhum pedido encontrado.</td></tr>`; return; }
+  tbody.innerHTML = pedidos.map(p=>{
+    const {pedida} = pedidoTotals(p);
+    const statusInfo = pedidoStatusInfo(p.status);
+    const confirmInfo = pedidoConfirmInfo(p);
+    return `<tr data-id="${esc(p.id)}">
+      <td>${fmtDateTimeBR(p.criadoEm)}</td>
+      <td><b>${esc(p.fornecedor||'—')}</b></td>
+      <td>${(p.itens||[]).length}</td>
+      <td class="num">${fmtNum(pedida)}</td>
+      <td><span class="tag ${statusInfo.tag}">${statusInfo.label}</span></td>
+      <td><span class="tag ${confirmInfo.tag}">${confirmInfo.label}</span></td>
+      <td><button class="btn btn-sm" data-analisar-pedido="${esc(p.id)}">🔎 ${confirmInfo.confirmado?'Revisar':'Analisar'}</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-analisar-pedido]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openCompradorAnaliseModal(btn.getAttribute('data-analisar-pedido')));
+  });
+}
+
+let compradorAnaliseId = null;
+
+function compradorItemRowHtml(it, pedidoId){
+  const historico = computeUltimosPrecos(it.itemId, pedidoId);
+  const historicoHtml = historico.length
+    ? historico.map(h=> `${fmtMoney(h.preco)} <span style="color:var(--text-muted);font-size:11px;">(${fmtDateBR((h.data||'').slice(0,10))})</span>`).join('<br>')
+    : '<span style="color:var(--text-muted);">Sem histórico</span>';
+  const precoAtual = Number(it.preco||0) > 0 ? it.preco : (historico[0] ? historico[0].preco : '');
+  const precoRef = historico[0] ? historico[0].preco : 0;
+  return `<tr data-item-id="${esc(it.itemId)}" data-preco-ref="${precoRef}">
+    <td>${esc(it.itemName)}</td>
+    <td>${esc(it.unidade||'un')}</td>
+    <td class="num"><input type="number" class="comprador-qtd-input" min="0.01" step="0.01" value="${Number(it.qtdPedida||0)}" style="width:90px;"></td>
+    <td>${historicoHtml}</td>
+    <td class="num"><input type="number" class="comprador-preco-input" min="0" step="0.01" value="${precoAtual}" style="width:100px;"></td>
+    <td class="num comprador-subtotal">${fmtMoney(Number(precoAtual||0) * Number(it.qtdPedida||0))}</td>
+    <td><input type="text" class="comprador-justificativa-input" value="${esc(it.justificativa||'')}" style="width:170px;display:none;"></td>
+  </tr>`;
+}
+
+function recomputeCompradorTotal(){
+  const tbody = document.getElementById('comprador-analise-itens');
+  let total = 0;
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const qtd = Number(tr.querySelector('.comprador-qtd-input').value||0);
+    const preco = Number(tr.querySelector('.comprador-preco-input').value||0);
+    const subtotal = qtd * preco;
+    tr.querySelector('.comprador-subtotal').textContent = fmtMoney(subtotal);
+    total += subtotal;
+
+    const precoRef = Number(tr.getAttribute('data-preco-ref')||0);
+    const justInput = tr.querySelector('.comprador-justificativa-input');
+    const precisaJustificar = precoRef > 0 && preco > precoRef * 1.05;
+    if(precisaJustificar){
+      justInput.style.display = 'block';
+      justInput.placeholder = `Justifique o aumento (ref.: ${fmtMoney(precoRef)})`;
+    } else {
+      justInput.style.display = 'none';
+      justInput.value = '';
+    }
+  });
+  document.getElementById('comprador-analise-total').textContent = fmtMoney(total);
+}
+
+function openCompradorAnaliseModal(id){
+  if(!state.currentUser || !(state.currentUser.admin || state.currentUser.comprador)){ toast('Acesso restrito ao comprador.', 'error'); return; }
+  const pedido = state.pedidos[id];
+  if(!pedido){ toast('Pedido não encontrado.', 'error'); return; }
+  compradorAnaliseId = id;
+  document.getElementById('comprador-analise-title').textContent = `Analisar pedido — ${pedido.fornecedor||'—'}`;
+  const confirmInfo = pedidoConfirmInfo(pedido);
+  document.getElementById('comprador-analise-sub').textContent = `Salvo em ${fmtDateTimeBR(pedido.criadoEm)} por ${pedido.criadoPor||'—'} · ${confirmInfo.label}${confirmInfo.confirmado && pedido.confirmadoPor ? ' por '+pedido.confirmadoPor : ''}`;
+  document.getElementById('comprador-data-entrega').value = pedido.dataEntregaPrevista || '';
+  const tbody = document.getElementById('comprador-analise-itens');
+  tbody.innerHTML = (pedido.itens||[]).map(it=> compradorItemRowHtml(it, id)).join('');
+  tbody.querySelectorAll('.comprador-preco-input, .comprador-qtd-input').forEach(inp=>{
+    inp.addEventListener('input', recomputeCompradorTotal);
+  });
+  recomputeCompradorTotal();
+  document.getElementById('modal-comprador-analise').style.display = 'flex';
+}
+
+document.getElementById('btn-confirmar-pedido-comprador').addEventListener('click', async ()=>{
+  if(!state.currentUser){ toast('Faça login para continuar.', 'error'); return; }
+  const id = compradorAnaliseId;
+  const pedido = state.pedidos[id];
+  if(!id || !pedido) return;
+  const dataEntrega = document.getElementById('comprador-data-entrega').value;
+  if(!dataEntrega){ toast('Informe a previsão de entrega.', 'error'); return; }
+
+  const rows = [...document.getElementById('comprador-analise-itens').querySelectorAll('tr')];
+  let erro = '';
+  const atualizacoesPorItem = {};
+  rows.forEach(tr=>{
+    const itemId = tr.getAttribute('data-item-id');
+    const qtd = Number(tr.querySelector('.comprador-qtd-input').value||0);
+    const preco = Number(tr.querySelector('.comprador-preco-input').value||0);
+    const precoRef = Number(tr.getAttribute('data-preco-ref')||0);
+    const justificativa = tr.querySelector('.comprador-justificativa-input').value.trim();
+    if(qtd <= 0){ erro = 'Informe uma quantidade válida para todos os itens.'; return; }
+    if(preco <= 0){ erro = 'Informe o preço atual de todos os itens antes de confirmar.'; return; }
+    const precisaJustificar = precoRef > 0 && preco > precoRef * 1.05;
+    if(precisaJustificar && !justificativa){ erro = 'Justifique o aumento de preço acima de 5% antes de confirmar.'; return; }
+    atualizacoesPorItem[itemId] = {
+      qtdPedida: qtd, preco,
+      justificativa: precisaJustificar ? justificativa : '',
+      precoReferencia: precisaJustificar ? precoRef : 0,
+    };
+  });
+  if(erro){ toast(erro, 'error'); return; }
+
+  const itens = (pedido.itens||[]).map(it=>{
+    const upd = atualizacoesPorItem[it.itemId];
+    if(!upd) return it;
+    const body = Object.assign({}, it, {qtdPedida: upd.qtdPedida, preco: upd.preco});
+    if(upd.justificativa){ body.justificativa = upd.justificativa; body.precoReferencia = upd.precoReferencia; }
+    else { delete body.justificativa; delete body.precoReferencia; }
+    return body;
+  });
+  const confirmadoEm = new Date().toISOString();
+  const confirmadoPor = state.currentUser.nome;
+  // a quantidade solicitada pode ter mudado aqui — recalcula o status de recebimento
+  const allDone = itens.every(it=> Number(it.qtdRecebida||0) >= Number(it.qtdPedida||0) - 0.0001);
+  const anyReceived = itens.some(it=> Number(it.qtdRecebida||0) > 0);
+  const status = pedido.status==='cancelado' ? 'cancelado' : (allDone ? 'concluido' : (anyReceived ? 'parcial' : 'aberto'));
+
+  try{
+    await state.db.doc('pedidos/'+id).set(Object.assign({}, pedido, {itens, status, dataEntregaPrevista: dataEntrega, confirmadoEm, confirmadoPor}));
+    toast('Pedido confirmado com sucesso.', 'success');
+    closeModal('modal-comprador-analise');
+  }catch(e){ console.error(e); toast('Erro ao confirmar pedido: '+e.message, 'error'); }
+});
+
+/* ---- Histórico de Compras / Auditoria de Compras — base comum ---- */
+// Um "achatamento" dos pedidos já confirmados: uma linha por item comprado,
+// usada tanto pelo Histórico de Compras (todas as linhas) quanto pela
+// Auditoria de Compras (só as linhas que tiveram justificativa de preço).
+function flattenComprasConfirmadas(){
+  const rows = [];
+  Object.values(state.pedidos).forEach(p=>{
+    if(!p.confirmadoEm) return;
+    (p.itens||[]).forEach(it=>{
+      const qtd = Number(it.qtdPedida||0);
+      const preco = Number(it.preco||0);
+      rows.push({
+        pedidoId: p.id,
+        data: p.confirmadoEm,
+        fornecedor: p.fornecedor||'',
+        itemName: it.itemName||'',
+        unidade: it.unidade||'un',
+        qtd, preco,
+        subtotal: qtd * preco,
+        dataEntregaPrevista: p.dataEntregaPrevista||'',
+        justificativa: it.justificativa||'',
+        precoReferencia: Number(it.precoReferencia||0),
+      });
+    });
+  });
+  rows.sort((a,b)=> (b.data||'').localeCompare(a.data||''));
+  return rows;
+}
+function filtrarComprasPeriodo(rows, dataInicioId, dataFimId, buscaId){
+  const dataInicio = document.getElementById(dataInicioId).value;
+  const dataFim = document.getElementById(dataFimId).value;
+  const busca = (document.getElementById(buscaId).value||'').toLowerCase();
+  return rows.filter(r=>{
+    const dataCompra = (r.data||'').slice(0,10);
+    if(dataInicio && dataCompra < dataInicio) return false;
+    if(dataFim && dataCompra > dataFim) return false;
+    if(busca && !r.itemName.toLowerCase().includes(busca) && !r.fornecedor.toLowerCase().includes(busca)) return false;
+    return true;
+  });
+}
+
+function renderHistoricoComprasTab(){
+  const tbody = document.getElementById('historico-compras-tbody');
+  if(!tbody) return;
+  const rows = filtrarComprasPeriodo(flattenComprasConfirmadas(), 'historico-compras-data-inicio', 'historico-compras-data-fim', 'historico-compras-busca');
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">📜</span>Nenhuma compra encontrada no período.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=> `<tr>
+    <td>${fmtDateTimeBR(r.data)}</td>
+    <td>${esc(r.fornecedor||'—')}</td>
+    <td>${esc(r.itemName)}</td>
+    <td class="num">${fmtNum(r.qtd)} ${esc(r.unidade)}</td>
+    <td class="num">${fmtMoney(r.preco)}</td>
+    <td class="num">${fmtMoney(r.subtotal)}</td>
+    <td>${fmtDateBR(r.dataEntregaPrevista)}</td>
+  </tr>`).join('');
+}
+(function initHistoricoComprasDates(){
+  const now = new Date();
+  document.getElementById('historico-compras-data-inicio').value = isoFromDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  document.getElementById('historico-compras-data-fim').value = todayISO();
+})();
+['historico-compras-data-inicio','historico-compras-data-fim','historico-compras-busca'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderHistoricoComprasTab);
+  document.getElementById(id).addEventListener('change', renderHistoricoComprasTab);
+});
+
+function renderAuditoriaTab(){
+  const tbody = document.getElementById('auditoria-tbody');
+  const statsEl = document.getElementById('auditoria-stats');
+  if(!tbody) return;
+  const rows = filtrarComprasPeriodo(flattenComprasConfirmadas().filter(r=> !!r.justificativa), 'auditoria-data-inicio', 'auditoria-data-fim', 'auditoria-busca');
+  const totalValor = rows.reduce((s,r)=> s + r.subtotal, 0);
+  statsEl.innerHTML = `
+    <div class="stat-tile"><div class="label">Itens com justificativa</div><div class="value">${rows.length}</div></div>
+    <div class="stat-tile warn"><div class="label">Valor total no período</div><div class="value" style="font-size:18px;">${fmtMoney(totalValor)}</div></div>
+  `;
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><span class="ic">🔍</span>Nenhum item com justificativa encontrado no período.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r=>{
+    const variacaoPct = r.precoReferencia>0 ? ((r.preco - r.precoReferencia)/r.precoReferencia*100) : 0;
+    return `<tr>
+      <td>${fmtDateTimeBR(r.data)}</td>
+      <td>${esc(r.fornecedor||'—')}</td>
+      <td>${esc(r.itemName)}</td>
+      <td class="num">${fmtMoney(r.precoReferencia)}</td>
+      <td class="num">${fmtMoney(r.preco)}</td>
+      <td class="num" style="color:var(--warn);">+${fmtNum(variacaoPct)}%</td>
+      <td>${esc(r.justificativa)}</td>
+    </tr>`;
+  }).join('');
+}
+(function initAuditoriaDates(){
+  document.getElementById('auditoria-data-fim').value = todayISO();
+  document.getElementById('auditoria-data-inicio').value = isoFromDate(new Date(Date.now() - 29*86400000));
+})();
+['auditoria-data-inicio','auditoria-data-fim','auditoria-busca'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderAuditoriaTab);
+  document.getElementById(id).addEventListener('change', renderAuditoriaTab);
+});
+
+/* ---- Dashboard do Comprador — total de pedidos x meta mensal ---- */
+let compradorMetaMensal = 0;
+async function loadCompradorMeta(){
+  try{
+    const snap = await state.db.doc('config/comprador').get();
+    const val = snap.data();
+    compradorMetaMensal = (val && Number(val.metaMensal)) || 0;
+  }catch(e){ console.error('Falha ao carregar meta do comprador', e); }
+  renderCompradorDashboard();
+}
+function renderCompradorDashboard(){
+  const statsEl = document.getElementById('comprador-dashboard-stats');
+  if(!statsEl) return;
+  const metaInput = document.getElementById('comprador-meta-input');
+  if(document.activeElement !== metaInput) metaInput.value = compradorMetaMensal || '';
+  const mesAtual = todayISO().slice(0,7);
+  let totalPedido = 0, totalAberto = 0, totalConcluido = 0;
+  Object.values(state.pedidos).forEach(p=>{
+    if(!p.confirmadoEm || (p.confirmadoEm||'').slice(0,7) !== mesAtual) return;
+    const valor = (p.itens||[]).reduce((s,it)=> s + Number(it.qtdPedida||0)*Number(it.preco||0), 0);
+    totalPedido += valor;
+    if(p.status==='concluido') totalConcluido += valor;
+    else if(p.status!=='cancelado') totalAberto += valor;
+  });
+  statsEl.innerHTML = `
+    <div class="stat-tile"><div class="label">Total de pedidos no mês</div><div class="value" style="font-size:18px;">${fmtMoney(totalPedido)}</div></div>
+    <div class="stat-tile warn"><div class="label">Em aberto</div><div class="value" style="font-size:18px;">${fmtMoney(totalAberto)}</div></div>
+    <div class="stat-tile ok"><div class="label">Concluído</div><div class="value" style="font-size:18px;">${fmtMoney(totalConcluido)}</div></div>
+  `;
+  const pct = compradorMetaMensal > 0 ? Math.min(100, (totalPedido/compradorMetaMensal*100)) : 0;
+  document.getElementById('comprador-meta-progress-bar').style.width = pct + '%';
+  document.getElementById('comprador-meta-progress-label').textContent = compradorMetaMensal > 0
+    ? `${fmtMoney(totalPedido)} de ${fmtMoney(compradorMetaMensal)} (${fmtNum(pct)}%) da meta do mês`
+    : 'Defina uma meta mensal para acompanhar o progresso.';
+}
+document.getElementById('btn-salvar-meta-comprador').addEventListener('click', async ()=>{
+  if(!state.currentUser || !(state.currentUser.admin || state.currentUser.comprador)){ toast('Acesso restrito ao comprador.', 'error'); return; }
+  const val = Number(document.getElementById('comprador-meta-input').value||0);
+  if(val <= 0){ toast('Informe um valor de meta válido.', 'error'); return; }
+  try{
+    await state.db.doc('config/comprador').set({metaMensal: val});
+    compradorMetaMensal = val;
+    toast('Meta mensal salva com sucesso.', 'success');
+    renderCompradorDashboard();
+  }catch(e){ console.error(e); toast('Erro ao salvar meta: '+e.message, 'error'); }
 });
 
 /* ---- vincular pedido salvo à Entrada de mercadoria (Estoque) ---- */
@@ -2782,7 +3266,7 @@ async function applyPedidoRecebimento(pedidoId, itemsRecebidos){
 }
 
 /* ---- exportar / importar pedido em Excel (.xlsx) — para levar entre máquinas com bancos separados ---- */
-const PEDIDO_XLSX_HEADERS = ['ID do Pedido','Fornecedor','Status','Criado em','Criado por','Item ID','Insumo','Unidade','Qtd. Pedida','Qtd. Recebida'];
+const PEDIDO_XLSX_HEADERS = ['ID do Pedido','Fornecedor','Status','Criado em','Criado por','Item ID','Insumo','Unidade','Qtd. Pedida','Qtd. Recebida','Preço Unitário','Data Entrega Prevista','Confirmado Em','Confirmado Por'];
 
 async function exportPedido(id){
   const pedido = state.pedidos[id];
@@ -2796,10 +3280,11 @@ async function exportPedido(id){
     rows.push([
       pedido.id||id, pedido.fornecedor||'', pedido.status||'aberto', pedido.criadoEm||'', pedido.criadoPor||'',
       it.itemId, it.itemName, it.unidade||'un', Number(it.qtdPedida||0), Number(it.qtdRecebida||0),
+      Number(it.preco||0), pedido.dataEntregaPrevista||'', pedido.confirmadoEm||'', pedido.confirmadoPor||'',
     ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:14},{wch:22},{wch:11},{wch:20},{wch:18},{wch:14},{wch:26},{wch:9},{wch:12},{wch:13}];
+  ws['!cols'] = [{wch:14},{wch:22},{wch:11},{wch:20},{wch:18},{wch:14},{wch:26},{wch:9},{wch:12},{wch:13},{wch:13},{wch:16},{wch:20},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Pedido');
   const arrayBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
@@ -2849,6 +3334,10 @@ document.getElementById('input-importar-pedido').addEventListener('change', asyn
     const idxUnidade = col('unidade');
     const idxQtdPedida = col('qtd. pedida','qtd pedida');
     const idxQtdRecebida = col('qtd. recebida','qtd recebida');
+    const idxPreco = col('preço unitário','preco unitario','preço','preco');
+    const idxDataEntrega = col('data entrega prevista','data de entrega prevista','data entrega');
+    const idxConfirmadoEm = col('confirmado em');
+    const idxConfirmadoPor = col('confirmado por');
     if(idxItemId===-1 || idxItemName===-1 || idxQtdPedida===-1){
       throw new Error('colunas esperadas não encontradas — use a planilha exportada por este sistema');
     }
@@ -2865,14 +3354,21 @@ document.getElementById('input-importar-pedido').addEventListener('change', asyn
       criadoEm: (idxCriadoEm!==-1 && first[idxCriadoEm]) ? String(first[idxCriadoEm]) : new Date().toISOString(),
       criadoPor: (idxCriadoPor!==-1 && first[idxCriadoPor]) ? String(first[idxCriadoPor]) : state.currentUser.nome,
       status: ['aberto','parcial','concluido','cancelado'].includes(statusRaw) ? statusRaw : 'aberto',
+      dataEntregaPrevista: (idxDataEntrega!==-1 && first[idxDataEntrega]) ? String(first[idxDataEntrega]) : '',
+      confirmadoEm: (idxConfirmadoEm!==-1 && first[idxConfirmadoEm]) ? String(first[idxConfirmadoEm]) : '',
+      confirmadoPor: (idxConfirmadoPor!==-1 && first[idxConfirmadoPor]) ? String(first[idxConfirmadoPor]) : '',
       itens: dataRows.map(r=>({
         itemId: String(r[idxItemId]),
         itemName: String(r[idxItemName]||''),
         unidade: (idxUnidade!==-1 && r[idxUnidade]) ? String(r[idxUnidade]) : 'un',
         qtdPedida: Number(r[idxQtdPedida]||0),
         qtdRecebida: (idxQtdRecebida!==-1) ? Number(r[idxQtdRecebida]||0) : 0,
+        preco: (idxPreco!==-1) ? Number(r[idxPreco]||0) : 0,
       })),
     };
+    if(!pedidoDoc.dataEntregaPrevista) delete pedidoDoc.dataEntregaPrevista;
+    if(!pedidoDoc.confirmadoEm) delete pedidoDoc.confirmadoEm;
+    if(!pedidoDoc.confirmadoPor) delete pedidoDoc.confirmadoPor;
     if(!pedidoDoc.itens.every(it=> it.itemId && it.itemName)) throw new Error('itens da planilha em formato inválido');
 
     await state.db.doc('pedidos/'+id).set(pedidoDoc);
