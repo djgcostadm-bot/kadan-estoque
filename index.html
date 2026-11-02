@@ -334,6 +334,16 @@ td.editable-num input{text-align:right;}
 /* ============ MOBILE ============ */
 .menu-btn,.sidebar-backdrop{display:none;}
 .subtab .ic{margin-right:6px;}
+.tbl-contagem{table-layout:fixed;width:100%;}
+.tbl-contagem th{white-space:normal;}
+.tbl-contagem th:nth-child(1){width:auto;}
+.tbl-contagem th:nth-child(2){width:23%;}
+.tbl-contagem th:nth-child(3){width:26%;}
+.tbl-contagem th:nth-child(4){width:20%;}
+.tbl-contagem td:first-child{overflow-wrap:anywhere;}
+.tbl-contagem td.editable-num{width:auto;}
+.tbl-contagem td.editable-num input{padding:7px 8px;min-height:0;}
+.tbl-contagem .un{font-size:10.5px;color:var(--text-muted);font-family:var(--font-body,inherit);}
 .subtab .ls{display:none;}
 #app-shell > .app{flex:1 1 0;min-width:0;width:100%;}
 .content{min-width:0;}
@@ -408,6 +418,11 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
   .pill-toggle{max-width:100%;overflow-x:auto;}
   .pill-toggle button{white-space:nowrap;padding:10px 13px;}
 
+  .tbl-contagem th,.tbl-contagem td{padding:8px 6px;}
+  .tbl-contagem td.editable-num input{min-height:40px !important;padding:6px !important;}
+  .tbl-contagem{font-size:12.5px;}
+  #ajuste-area .field{min-width:0 !important;width:100%;}
+  #ajuste-busca{width:100% !important;}
   thead th{padding:8px 9px;}
   tbody td{padding:9px;}
   table{font-size:12.5px;}
@@ -457,7 +472,7 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
     <p id="login-error" style="display:none;color:var(--critical);font-size:12.5px;margin:0 0 10px 0;"></p>
     <button class="btn btn-primary" id="btn-login-submit" style="width:100%;">Entrar</button>
     <p style="margin:12px 0 0 0;font-size:11px;color:var(--text-muted);">Todas as operações de estoque exigem usuário identificado e senha.</p>
-    <p style="margin:6px 0 0 0;font-size:10px;color:var(--text-muted);opacity:.6;">build 2026-09-09-rtdb</p>
+    <p style="margin:6px 0 0 0;font-size:10px;color:var(--text-muted);opacity:.6;">build 2026-11-02-rtdb2</p>
   </div>
 </div>
 
@@ -661,7 +676,7 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
           <div class="card-head">
             <div>
               <h2>🔄 Ajuste de Estoque por Contagem</h2>
-              <p>Depois de contar fisicamente, lance o resultado aqui para ajustar o sistema. Toda divergência exige um motivo.</p>
+              <p>Depois de contar fisicamente, lance o resultado aqui para ajustar o sistema.</p>
             </div>
             <button class="btn btn-primary" id="btn-abrir-ajuste">Iniciar lançamento de contagem</button>
           </div>
@@ -685,8 +700,8 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
               <input type="text" id="ajuste-busca" placeholder="Buscar item…" style="width:200px;display:none;">
             </div>
             <div class="table-wrap" id="ajuste-table-wrap" style="display:none;">
-              <table>
-                <thead><tr><th>Insumo</th><th>Un.</th><th class="num">Estoque Sistema</th><th class="num">Contagem Física</th><th class="num">Divergência</th><th>Motivo (obrigatório se houver divergência)</th></tr></thead>
+              <table class="tbl-contagem">
+                <thead><tr><th>Insumo</th><th class="num">Estoque</th><th class="num">Contagem</th><th class="num">Diverg.</th></tr></thead>
                 <tbody id="ajuste-tbody"></tbody>
               </table>
             </div>
@@ -707,7 +722,7 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Insumo</th><th>Setor</th><th class="num">Estoque Sistema</th><th class="num">Contagem Física</th><th class="num">Divergência</th><th>Motivo</th><th>Responsável</th></tr></thead>
+              <thead><tr><th>Insumo</th><th>Setor</th><th class="num">Estoque Sistema</th><th class="num">Contagem Física</th><th class="num">Divergência</th><th>Responsável</th></tr></thead>
               <tbody id="divergencias-tbody"></tbody>
             </table>
           </div>
@@ -2741,11 +2756,9 @@ document.getElementById('btn-carregar-ajuste').addEventListener('click', ()=>{
   const tbody = document.getElementById('ajuste-tbody');
   tbody.innerHTML = items.map(i=>`<tr data-id="${esc(i.id)}" data-nome="${esc(i.nome.toLowerCase())}">
     <td><b>${esc(i.nome)}</b></td>
-    <td>${esc(i.unidade||'un')}</td>
-    <td class="num">${fmtNum(i.qty)}</td>
-    <td class="num editable-num"><input type="number" step="0.01" class="ajuste-contagem-input" placeholder="—"></td>
+    <td class="num">${fmtNum(i.qty)} <span class="un">${esc(i.unidade||'un')}</span></td>
+    <td class="num editable-num"><input type="number" step="0.01" inputmode="decimal" class="ajuste-contagem-input" placeholder="—"></td>
     <td class="num ajuste-divergencia-cell">—</td>
-    <td><input type="text" class="ajuste-motivo-input" placeholder="Motivo da divergência" disabled></td>
   </tr>`).join('');
 
   tbody.querySelectorAll('tr').forEach(tr=>{
@@ -2753,19 +2766,15 @@ document.getElementById('btn-carregar-ajuste').addEventListener('click', ()=>{
     const item = state.stock[id];
     const contagemInp = tr.querySelector('.ajuste-contagem-input');
     const divCell = tr.querySelector('.ajuste-divergencia-cell');
-    const motivoInp = tr.querySelector('.ajuste-motivo-input');
     contagemInp.addEventListener('input', ()=>{
       if(contagemInp.value===''){
         divCell.textContent = '—'; divCell.style.color = '';
-        motivoInp.disabled = true; motivoInp.value = '';
         return;
       }
       const contagem = Number(contagemInp.value);
       const div = Number((contagem - Number(item.qty||0)).toFixed(4));
       divCell.textContent = (div>0?'+':'') + fmtNum(div);
       divCell.style.color = div===0 ? '' : (div>0 ? 'var(--ok)' : 'var(--critical)');
-      motivoInp.disabled = div===0;
-      if(div===0) motivoInp.value = '';
     });
   });
 
@@ -2790,7 +2799,6 @@ document.getElementById('btn-aplicar-ajuste').addEventListener('click', async ()
 
   const rows = [...document.querySelectorAll('#ajuste-tbody tr')];
   const counted = [];
-  const missingMotivo = [];
   rows.forEach(tr=>{
     const contagemInp = tr.querySelector('.ajuste-contagem-input');
     if(contagemInp.value === '') return; // item não contado nesta rodada — ignora
@@ -2798,15 +2806,9 @@ document.getElementById('btn-aplicar-ajuste').addEventListener('click', async ()
     const item = state.stock[id];
     const contagem = Number(contagemInp.value);
     const divergencia = Number((contagem - Number(item.qty||0)).toFixed(4));
-    const motivo = tr.querySelector('.ajuste-motivo-input').value.trim();
-    if(divergencia !== 0 && !motivo){ missingMotivo.push(item.nome); return; }
-    counted.push({itemId:id, item, contagem, estoqueAnterior:Number(item.qty||0), divergencia, motivo});
+    counted.push({itemId:id, item, contagem, estoqueAnterior:Number(item.qty||0), divergencia});
   });
 
-  if(missingMotivo.length){
-    toast(`Informe o motivo da divergência para: ${missingMotivo.slice(0,3).join(', ')}${missingMotivo.length>3?' e outros':''}`, 'error');
-    return;
-  }
   if(counted.length===0){ toast('Informe ao menos uma contagem física para aplicar o ajuste.', 'error'); return; }
 
   const divergentes = counted.filter(c=> c.divergencia !== 0);
@@ -2825,7 +2827,7 @@ document.getElementById('btn-aplicar-ajuste').addEventListener('click', async ()
         qty: Math.abs(r.divergencia), delta: r.divergencia,
         estoqueAnterior: r.estoqueAnterior, contagem: r.contagem,
         fornecedor: '', setor: (r.item.setores||[])[0] || '',
-        responsavel, obs: 'Ajuste por contagem — ' + r.motivo, motivo: r.motivo,
+        responsavel, obs: 'Ajuste por contagem',
       });
       okCount++;
     }catch(e){ console.error('Falha ao ajustar item', r.itemId, e); failCount++; }
@@ -2858,7 +2860,6 @@ function renderDivergenciasReport(entries, dataAjuste, responsavel){
       <td class="num">${fmtNum(e.estoqueAnterior)}</td>
       <td class="num">${fmtNum(e.contagem)}</td>
       <td class="num" style="color:${e.delta>=0?'var(--ok)':'var(--critical)'};">${e.delta>=0?'+':''}${fmtNum(e.delta)}</td>
-      <td>${esc(e.motivo||'—')}</td>
       <td>${esc(responsavel)}</td>
     </tr>`).join('');
   }
@@ -2876,12 +2877,12 @@ document.getElementById('divergencias-imprimir').addEventListener('click', ()=>{
   const responsavel = card._responsavel || (state.currentUser ? state.currentUser.nome : '—');
   let html = `<div class="print-header"><h2>Relatório de Divergências de Inventário — Kadan Sushi Bar (Salvador)</h2>
     <div class="meta">Contagem de ${fmtDateBR(dataAjuste)}<br>Gerado em ${fmtDateTimeBR(new Date().toISOString())}<br>Responsável: ${esc(responsavel)}</div></div>`;
-  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Estoque Sistema</th><th>Contagem Física</th><th>Divergência</th><th>Motivo</th></tr></thead><tbody>`;
+  html += `<table class="print-table"><thead><tr><th>Insumo</th><th>Setor</th><th>Estoque Sistema</th><th>Contagem Física</th><th>Divergência</th></tr></thead><tbody>`;
   if(entries.length===0){
-    html += `<tr><td colspan="6">Nenhuma divergência — contagem confere com o sistema.</td></tr>`;
+    html += `<tr><td colspan="5">Nenhuma divergência — contagem confere com o sistema.</td></tr>`;
   } else {
     entries.forEach(e=>{
-      html += `<tr><td>${esc(e.itemName)}</td><td>${esc(e.setor||'—')}</td><td>${fmtNum(e.estoqueAnterior)}</td><td>${fmtNum(e.contagem)}</td><td>${e.delta>=0?'+':''}${fmtNum(e.delta)}</td><td>${esc(e.motivo||'—')}</td></tr>`;
+      html += `<tr><td>${esc(e.itemName)}</td><td>${esc(e.setor||'—')}</td><td>${fmtNum(e.estoqueAnterior)}</td><td>${fmtNum(e.contagem)}</td><td>${e.delta>=0?'+':''}${fmtNum(e.delta)}</td></tr>`;
     });
   }
   html += `</tbody></table>`;
@@ -2893,8 +2894,8 @@ document.getElementById('divergencias-baixar-csv').addEventListener('click', asy
   const card = document.getElementById('card-divergencias');
   const entries = card._entries || [];
   const responsavel = card._responsavel || '';
-  const rows = [['Insumo','Setor','Estoque Sistema','Contagem Fisica','Divergencia','Motivo','Responsavel']];
-  entries.forEach(e=> rows.push([e.itemName, e.setor||'', fmtNum(e.estoqueAnterior), fmtNum(e.contagem), fmtNum(e.delta), e.motivo||'', responsavel]));
+  const rows = [['Insumo','Setor','Estoque Sistema','Contagem Fisica','Divergencia','Responsavel']];
+  entries.forEach(e=> rows.push([e.itemName, e.setor||'', fmtNum(e.estoqueAnterior), fmtNum(e.contagem), fmtNum(e.delta), responsavel]));
   await downloadCsv(rows, 'divergencias_inventario_kadan.csv');
 });
 
