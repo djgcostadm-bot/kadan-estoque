@@ -1418,32 +1418,71 @@ async function initCapabilities(){
   try{
     if(typeof firebase === 'undefined'){
       showNoDbState();
-      showLoginError('Não foi possível carregar o Firebase. Verifique sua conexão com a internet e recarregue a página.');
+      showInitError('Não foi possível carregar o Firebase. Verifique sua conexão com a internet e recarregue a página.');
       return;
     }
     if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('COLE_AQUI') === 0){
       showNoDbState();
-      showLoginError('Configuração do Firebase pendente: edite o objeto firebaseConfig no início do arquivo com os dados do seu projeto Firebase.');
+      showInitError('Configuração do Firebase pendente: edite o objeto firebaseConfig no início do arquivo com os dados do seu projeto Firebase.');
       return;
     }
-    if(!firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('COLE_AQUI') === 0){
-      showNoDbState();
-      showLoginError('Configuração do Realtime Database pendente: edite firebaseConfig.databaseURL no início do arquivo (veja o passo a passo).');
-      return;
-    }
+    firebaseConfig.databaseURL = resolveDatabaseURL();
     firebase.initializeApp(firebaseConfig);
     // login anônimo no Firebase — necessário para que as regras de segurança do
     // Realtime Database possam exigir "usuário autenticado" sem depender de
     // contas Google; o login de verdade (usuário/senha) continua sendo o do
     // próprio app, guardado no nó "users" do banco.
     await firebase.auth().signInAnonymously();
+    const conectado = await aguardarConexaoBanco(12000);
+    if(!conectado){
+      showNoDbState();
+      showInitError('Não foi possível conectar ao banco de dados em ' + firebaseConfig.databaseURL + '. Se o endereço do seu Realtime Database for outro, informe-o abaixo.', true);
+      return;
+    }
     const db = makeDbShim(firebase.database());
     state.db = db;
     state.downloads = { save: browserDownload };
     await initAuth(db);
   }catch(e){
     console.error(e);
-    showLoginError('Erro ao conectar ao Firebase: '+e.message);
+    showInitError('Erro ao conectar ao Firebase: '+e.message, true);
+  }
+}
+
+// Endereço do Realtime Database: usa o que estiver no firebaseConfig; se ainda for o
+// texto de exemplo, usa o salvo neste navegador ou o padrão do projeto.
+function resolveDatabaseURL(){
+  const v = firebaseConfig.databaseURL;
+  if(v && v.indexOf('COLE_AQUI') !== 0) return v;
+  try{ const s = localStorage.getItem('kadan_db_url'); if(s) return s; }catch(e){}
+  return 'https://' + firebaseConfig.projectId + '-default-rtdb.firebaseio.com';
+}
+function aguardarConexaoBanco(ms){
+  return new Promise(resolve=>{
+    const ref = firebase.database().ref('.info/connected');
+    let t = null;
+    const h = ref.on('value', s=>{
+      if(s.val() === true){ clearTimeout(t); ref.off('value', h); resolve(true); }
+    });
+    t = setTimeout(()=>{ ref.off('value', h); resolve(false); }, ms);
+  });
+}
+function pedirEnderecoBanco(){
+  const v = (window.prompt('Cole o endereço (databaseURL) do Realtime Database. Ex.: https://kadan-estoque-default-rtdb.firebaseio.com', '') || '').trim().replace(/\/+$/, '');
+  if(!/^https:\/\/[^\s]+$/.test(v)) return;
+  try{ localStorage.setItem('kadan_db_url', v); }catch(e){}
+  location.reload();
+}
+function showInitError(msg, comBotao){
+  state.initError = msg;
+  showLoginError(msg);
+  if(comBotao){
+    const el = document.getElementById('login-error');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-sm'; b.style.display = 'block'; b.style.marginTop = '8px';
+    b.textContent = 'Informar endereço do banco de dados';
+    b.addEventListener('click', pedirEnderecoBanco);
+    el.appendChild(b);
   }
 }
 
@@ -1586,7 +1625,11 @@ function startApp(){
 
 document.getElementById('btn-login-submit').addEventListener('click', async ()=>{
   clearLoginError();
-  if(!state.db){ showLoginError('Ainda conectando ao armazenamento de dados. Aguarde um instante e tente novamente.'); return; }
+  if(!state.db){
+    if(state.initError) showInitError(state.initError, true);
+    else showLoginError('Ainda conectando ao armazenamento de dados. Aguarde um instante e tente novamente.');
+    return;
+  }
   const usuario = document.getElementById('login-usuario-input').value.trim();
   const senha = document.getElementById('login-senha-input').value;
   if(!usuario || !senha){ showLoginError('Informe usuário e senha.'); return; }
